@@ -95,6 +95,36 @@ char * vigeneres_cipher_ENCR(char * msg, char * key){
     return cipherText;
 }
 
+char * vigeneres_cipher_DECR(char * encMsg, char * key){
+    int k = 0;
+    char * keystream = (char *) malloc(strlen(encMsg)); 
+    char * plainText = (char *) malloc(strlen(encMsg)); 
+    // Generate the keystream
+    for(int i=0; i<strlen(encMsg); i++){
+        *(keystream + i) = *(key + k);
+        k++;
+        if(k == strlen(key)){
+            k = 0;
+        }
+        // printf("i=%d, k=%d\n", i, k);
+    }
+    // printf("Keystream: %s\n", keystream);
+    
+    int a_val = (int)'A';               // value of 'A' in the ASCII table
+    for(int i=0; i<strlen(encMsg); i++){
+        int cipTx_letter_val = (int)*(encMsg + i);
+        int keystream_letter_val = (int)*(keystream + i); 
+        int res = cipTx_letter_val - a_val;
+        int y_shift = keystream_letter_val - a_val;
+        int x_shift = y_shift - res;
+        res = abs(ALPHABET_SIZE - x_shift) % ALPHABET_SIZE;
+        *(plainText + i) = (char)(res + a_val);
+        // printf("i=%d, k=%d\n", i, k);
+    } 
+    
+    return plainText;
+}
+
 
 int main() {
     urandom = fopen(URANDOM_DEVICE, "rb");
@@ -128,10 +158,10 @@ int main() {
     msg = "ATTACKATDAWN"; 
     char *  key1 = "LEMON";
     str = vigeneres_cipher_ENCR(msg, key1);
-    printf("[Ceasars] input: %s\n", msg);  
-    printf("[Ceasars] key: %s\n", key1);  
-    printf("[Ceasars] encrypted: %s\n", str);  
-    // printf("[Ceasars] decrypted: %s\n", ceasars_cipher_DECR(str, key));  
+    printf("[Vigenere] input: %s\n", msg);  
+    printf("[Vigenere] key: %s\n", key1);  
+    printf("[Vigenere] encrypted: %s\n", str);  
+    printf("[Vigenere] decrypted: %s\n", vigeneres_cipher_DECR(str, key1));  
    
     fclose(urandom);
     return 0;
