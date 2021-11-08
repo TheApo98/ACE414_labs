@@ -55,10 +55,10 @@ char * ceasars_cipher_ENCR(char * msg, int key){
     return outputWord;
 }
 
-char * ceasars_cipher_DECR(char * msg, int key){
-    char * outputWord = (char *) malloc(strlen(msg)); 
-    for(int i=0; i<strlen(msg); i++){
-        *(outputWord + i) = (char)((int)*(msg + i) - key);
+char * ceasars_cipher_DECR(char * encMsg, int key){
+    char * outputWord = (char *) malloc(strlen(encMsg)); 
+    for(int i=0; i<strlen(encMsg); i++){
+        *(outputWord + i) = (char)((int)*(encMsg + i) - key);
     }
     return outputWord;
 }
