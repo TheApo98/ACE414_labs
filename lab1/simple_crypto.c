@@ -8,6 +8,7 @@
 #define URANDOM_DEVICE "/dev/urandom"
 
 static FILE *urandom;
+
 char * randomKEY;
 
 
@@ -22,7 +23,7 @@ char random_char() {
         }
     }
     while (c > MAX || c < MIN);
-
+    // printf("Random char: %c, dec: %d\n", c, c);      //for debugging
     return (char) c;
 }
 
@@ -32,22 +33,15 @@ char * one_time_pad_ENCR(char * msg){
     for(int i=0; i<strlen(msg)+1; i++){
         *(randomKEY + i) = random_char(); 
         *(outputWord + i) = (char) (*(randomKEY + i) ^ *(msg + i));
-        printf("i=%d\n", i);
     }
-    // printf("Size of str: %d\n", (int)strlen(msg));
-    // printf("randomKEY: %s, msg: %s\n", randomKEY, msg); 
     return outputWord;
 }
 
-char * one_time_pad_DECR(char * msg){
-    char * outputWord = (char *) malloc(strlen(msg)+1); 
-    for(int i=0; i<=strlen(msg)+1; i++){
-        *(randomKEY + i) = random_char(); 
-        *(outputWord + i) = (char) (*(randomKEY + i) ^ *(msg + i));
-        printf("i=%d\n", i);
+char * one_time_pad_DECR(char * encrMsg){
+    char * outputWord = (char *) malloc(strlen(encrMsg)+1); 
+    for(int i=0; i<strlen(encrMsg)+1; i++){
+        *(outputWord + i) = (char) (*(randomKEY + i) ^ *(encrMsg + i));
     }
-    printf("Size of str: %d\n", (int)strlen(msg));
-    printf("randomKEY: %s, msg: %s\n", randomKEY, msg); 
     return outputWord;
 }
 
@@ -64,11 +58,15 @@ int main() {
     // printf("This is str^str1: %d\n", 'a'^'b');
     // printf("Size of str: %d\n", (int)sizeof(str));
 
-    printf("ENcrypted otp: %s\n", one_time_pad_ENCR("tst"));  
+    /*** OTP implementation ***/
+    char * msg = "test"; 
+    char * str = one_time_pad_ENCR(msg);
+    printf("[OTP] input: %s\n", msg);  
+    printf("[OTP] encrypted: %s\n", str);  
+    printf("[OTP] decrypted: %s\n", one_time_pad_DECR(str));  
 
-    // for (int i = 0; i < 10; i ++) {
-    //     printf("%c\n", random_char());
-    // }
+   
+   
     fclose(urandom);
     return 0;
 }
