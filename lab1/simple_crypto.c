@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 #include "simple_crypto.h"
 
 #define MAX 127                         // max usable character
@@ -11,6 +12,8 @@
 static FILE *urandom;
 
 char * randomKEY;
+
+// char uppercase[] = {a,b,c}
 
 
 // Returns a random character (MIN to MAX for ascii table)
@@ -35,6 +38,7 @@ char * one_time_pad_ENCR(char * msg){
     for(int i=0; i<strlen(msg)+1; i++){
         *(randomKEY + i) = random_char(); 
         *(outputWord + i) = (char) (*(randomKEY + i) ^ *(msg + i));
+        // printf("Output: %d\n", outputWord[i]);    
     }
     return outputWord;
 }
@@ -49,19 +53,25 @@ char * one_time_pad_DECR(char * encrMsg){
 
 // Ceasar's cipher
 char * ceasars_cipher_ENCR(char * msg, int key){
-    char * outputWord = (char *) malloc(strlen(msg)); 
+    char * cipherText = (char *) malloc(strlen(msg)); 
     for(int i=0; i<strlen(msg); i++){
-        *(outputWord + i) = (char)((int)*(msg + i) + key);
+        if(isalpha(msg[i]) != 0 || isdigit(msg[i]) != 0)
+            *(cipherText + i) = (char)((int)*(msg + i) + key);
+        else
+            *(cipherText + i) = *(msg + i);
     }
-    return outputWord;
+    return cipherText;
 }
 
 char * ceasars_cipher_DECR(char * encMsg, int key){
-    char * outputWord = (char *) malloc(strlen(encMsg)); 
+    char * plainText = (char *) malloc(strlen(encMsg)); 
     for(int i=0; i<strlen(encMsg); i++){
-        *(outputWord + i) = (char)((int)*(encMsg + i) - key);
+        if(isalpha(encMsg[i]) != 0 || isdigit(encMsg[i]) != 0)
+            *(plainText + i) = (char)((int)*(encMsg + i) - key);
+        else
+            *(plainText + i) = *(encMsg + i);
     }
-    return outputWord;
+    return plainText;
 }
 
 // Vigenère’s cipher
@@ -82,6 +92,7 @@ char * vigeneres_cipher_ENCR(char * msg, char * key){
     
     int a_val = (int)'A';               // value of 'A' in the ASCII table
     for(int i=0; i<strlen(msg); i++){
+        spelling_check(msg[i], keystream[i]);       //check for spelling errors
         int plTx_letter_val = (int)*(msg + i); 
         int keystream_letter_val = (int)*(keystream + i); 
         int x_shift = abs(a_val - plTx_letter_val); 
@@ -125,6 +136,17 @@ char * vigeneres_cipher_DECR(char * encMsg, char * key){
     return plainText;
 }
 
+void spelling_check(char text_lt, char  key_lt){
+    if (isalpha(text_lt) == 0 || isalpha(key_lt) == 0){
+        fprintf(stderr, "[Vigenere] Plain text or key is not alphabet\n");
+        exit(EXIT_FAILURE);
+    }
+    if (isupper(text_lt) == 0 || isupper(key_lt) == 0){
+        fprintf(stderr, "[Vigenere] Plain text or key is not uppercase\n");
+        exit(EXIT_FAILURE); 
+    }
+}
+
 
 int main() {
     urandom = fopen(URANDOM_DEVICE, "rb");
@@ -133,20 +155,15 @@ int main() {
         exit(EXIT_FAILURE);
     }
 
-    // char str[] = "apo";
-    // char str1[] = "opa";
-    // printf("This is str: %c and int val: %d\n", *(str1), (int)*(str1));
-    // printf("Size of str: %d\n", (int)sizeof(str));
-
     /*** OTP implementation ***/
-    char * msg = "test"; 
+    char * msg = "test1@"; 
     char * str = one_time_pad_ENCR(msg);
     printf("[OTP] input: %s\n", msg);  
     printf("[OTP] encrypted: %s\n", str);  
     printf("[OTP] decrypted: %s\n", one_time_pad_DECR(str));  
 
     /*** Ceasar's cipher implementation ***/
-    msg = "hello"; 
+    msg = "he@llo1"; 
     int key = 4;
     str = ceasars_cipher_ENCR(msg, key);
     printf("[Ceasars] input: %s\n", msg);  
