@@ -27,6 +27,7 @@ char random_char() {
     return (char) c;
 }
 
+// One-time pad
 char * one_time_pad_ENCR(char * msg){
     randomKEY = (char *) malloc(strlen(msg)+1);
     char * outputWord = (char *) malloc(strlen(msg)+1); 
@@ -45,6 +46,22 @@ char * one_time_pad_DECR(char * encrMsg){
     return outputWord;
 }
 
+// Ceasar's cipher
+char * ceasars_cipher_ENCR(char * msg, int key){
+    char * outputWord = (char *) malloc(strlen(msg)); 
+    for(int i=0; i<strlen(msg); i++){
+        *(outputWord + i) = (char)((int)*(msg + i) + key);
+    }
+    return outputWord;
+}
+
+char * ceasars_cipher_DECR(char * msg, int key){
+    char * outputWord = (char *) malloc(strlen(msg)); 
+    for(int i=0; i<strlen(msg); i++){
+        *(outputWord + i) = (char)((int)*(msg + i) - key);
+    }
+    return outputWord;
+}
 
 int main() {
     urandom = fopen(URANDOM_DEVICE, "rb");
@@ -55,7 +72,7 @@ int main() {
 
     // char str[] = "apo";
     // char str1[] = "opa";
-    // printf("This is str^str1: %d\n", 'a'^'b');
+    // printf("This is str: %c and int val: %d\n", *(str1), (int)*(str1));
     // printf("Size of str: %d\n", (int)sizeof(str));
 
     /*** OTP implementation ***/
@@ -65,6 +82,14 @@ int main() {
     printf("[OTP] encrypted: %s\n", str);  
     printf("[OTP] decrypted: %s\n", one_time_pad_DECR(str));  
 
+    /*** Ceasar's cipher implementation ***/
+    msg = "hello"; 
+    int key = 4;
+    str = ceasars_cipher_ENCR(msg, key);
+    printf("[Ceasars] input: %s\n", msg);  
+    printf("[Ceasars] key: %d\n", key);  
+    printf("[Ceasars] encrypted: %s\n", str);  
+    printf("[Ceasars] decrypted: %s\n", ceasars_cipher_DECR(str, key));  
    
    
     fclose(urandom);
