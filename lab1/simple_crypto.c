@@ -5,6 +5,7 @@
 
 #define MAX 127                         // max usable character
 #define MIN 32                          // min usable character
+#define ALPHABET_SIZE 26
 #define URANDOM_DEVICE "/dev/urandom"
 
 static FILE *urandom;
@@ -63,6 +64,38 @@ char * ceasars_cipher_DECR(char * encMsg, int key){
     return outputWord;
 }
 
+// Vigenère’s cipher
+char * vigeneres_cipher_ENCR(char * msg, char * key){
+    int k = 0;
+    char * keystream = (char *) malloc(strlen(msg)); 
+    char * cipherText = (char *) malloc(strlen(msg)); 
+    // Generate the keystream
+    for(int i=0; i<strlen(msg); i++){
+        *(keystream + i) = *(key + k);
+        k++;
+        if(k == strlen(key)){
+            k = 0;
+        }
+        // printf("i=%d, k=%d\n", i, k);
+    }
+    // printf("Keystream: %s\n", keystream);
+    
+    int a_val = (int)'A';               // value of 'A' in the ASCII table
+    for(int i=0; i<strlen(msg); i++){
+        int plTx_letter_val = (int)*(msg + i); 
+        int keystream_letter_val = (int)*(keystream + i); 
+        int x_shift = abs(a_val - plTx_letter_val); 
+        int y_shift = abs(a_val - keystream_letter_val);
+        int res = (x_shift + y_shift) % ALPHABET_SIZE;
+        res = res + a_val;
+        *(cipherText + i) = (char)res;
+        // printf("i=%d, k=%d\n", i, k);
+    } 
+    
+    return cipherText;
+}
+
+
 int main() {
     urandom = fopen(URANDOM_DEVICE, "rb");
     if (urandom == NULL) {
@@ -91,6 +124,14 @@ int main() {
     printf("[Ceasars] encrypted: %s\n", str);  
     printf("[Ceasars] decrypted: %s\n", ceasars_cipher_DECR(str, key));  
    
+    /*** Vigenère’s cipher implementation ***/
+    msg = "ATTACKATDAWN"; 
+    char *  key1 = "LEMON";
+    str = vigeneres_cipher_ENCR(msg, key1);
+    printf("[Ceasars] input: %s\n", msg);  
+    printf("[Ceasars] key: %s\n", key1);  
+    printf("[Ceasars] encrypted: %s\n", str);  
+    // printf("[Ceasars] decrypted: %s\n", ceasars_cipher_DECR(str, key));  
    
     fclose(urandom);
     return 0;
