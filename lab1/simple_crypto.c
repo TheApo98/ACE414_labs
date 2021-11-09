@@ -7,6 +7,7 @@
 #define MAX 127                         // max usable character
 #define MIN 32                          // min usable character
 #define ALPHABET_SIZE 26
+#define NUM_SIZE 10
 #define URANDOM_DEVICE "/dev/urandom"
 
 static FILE *urandom;
@@ -44,8 +45,8 @@ char * one_time_pad_ENCR(char * msg){
 }
 
 char * one_time_pad_DECR(char * encrMsg){
-    char * outputWord = (char *) malloc(strlen(encrMsg)+1); 
-    for(int i=0; i<strlen(encrMsg)+1; i++){
+    char * outputWord = (char *) malloc(strlen(encrMsg)); 
+    for(int i=0; i<strlen(encrMsg); i++){
         *(outputWord + i) = (char) (*(randomKEY + i) ^ *(encrMsg + i));
     }
     return outputWord;
@@ -54,9 +55,21 @@ char * one_time_pad_DECR(char * encrMsg){
 // Ceasar's cipher
 char * ceasars_cipher_ENCR(char * msg, int key){
     char * cipherText = (char *) malloc(strlen(msg)); 
+    int charVal = 0;
     for(int i=0; i<strlen(msg); i++){
-        if(isalpha(msg[i]) != 0 || isdigit(msg[i]) != 0)
-            *(cipherText + i) = (char)((int)*(msg + i) + key);
+        charVal = (int)msg[i];
+        if(msg[i] >= 'A' && msg[i]<='Z'){
+            charVal = charVal - 'A';
+            *(cipherText + i) = ((charVal + key) % ALPHABET_SIZE) + 'A';
+        }
+        else if(msg[i] >= 'a' && msg[i]<='z'){
+            charVal = charVal - 'a';
+            *(cipherText + i) = ((charVal + key) % ALPHABET_SIZE) + 'a';
+        }
+        else if(isdigit(msg[i]) != 0){
+            charVal = charVal - '0';
+            *(cipherText + i) = ((charVal + key) % NUM_SIZE) + '0';
+        }
         else
             *(cipherText + i) = *(msg + i);
     }
@@ -65,9 +78,21 @@ char * ceasars_cipher_ENCR(char * msg, int key){
 
 char * ceasars_cipher_DECR(char * encMsg, int key){
     char * plainText = (char *) malloc(strlen(encMsg)); 
+    int charVal = 0;
     for(int i=0; i<strlen(encMsg); i++){
-        if(isalpha(encMsg[i]) != 0 || isdigit(encMsg[i]) != 0)
-            *(plainText + i) = (char)((int)*(encMsg + i) - key);
+        charVal = (int)encMsg[i];
+        if(encMsg[i] >= 'A' && encMsg[i]<='Z'){
+            charVal = charVal - 'A';
+            *(plainText + i) = abs((abs(charVal - key) % ALPHABET_SIZE) - ALPHABET_SIZE) + 'A';
+        }
+        else if(encMsg[i] >= 'a' && encMsg[i]<='z'){
+            charVal = charVal - 'a';
+            *(plainText + i) = abs((abs(charVal - key) % ALPHABET_SIZE) - ALPHABET_SIZE) + 'a';
+        }
+        else if(isdigit(encMsg[i]) != 0){
+            charVal = charVal - '0';
+            *(plainText + i) = abs((abs(charVal - key) % NUM_SIZE) - NUM_SIZE) + '0';
+        }
         else
             *(plainText + i) = *(encMsg + i);
     }
@@ -95,8 +120,8 @@ char * vigeneres_cipher_ENCR(char * msg, char * key){
         spelling_check(msg[i], keystream[i]);       //check for spelling errors
         int plTx_letter_val = (int)*(msg + i); 
         int keystream_letter_val = (int)*(keystream + i); 
-        int x_shift = abs(a_val - plTx_letter_val); 
-        int y_shift = abs(a_val - keystream_letter_val);
+        int x_shift = plTx_letter_val - a_val; 
+        int y_shift = keystream_letter_val - a_val;
         int res = (x_shift + y_shift) % ALPHABET_SIZE;
         res = res + a_val;
         *(cipherText + i) = (char)res;
@@ -164,7 +189,7 @@ int main() {
 
     /*** Ceasar's cipher implementation ***/
     msg = "he@llo1"; 
-    int key = 4;
+    int key = 100;
     str = ceasars_cipher_ENCR(msg, key);
     printf("[Ceasars] input: %s\n", msg);  
     printf("[Ceasars] key: %d\n", key);  
@@ -173,7 +198,7 @@ int main() {
    
     /*** Vigenère’s cipher implementation ***/
     msg = "ATTACKATDAWN"; 
-    char *  key1 = "LEMON";
+    char * key1 = "LEMON";
     str = vigeneres_cipher_ENCR(msg, key1);
     printf("[Vigenere] input: %s\n", msg);  
     printf("[Vigenere] key: %s\n", key1);  
