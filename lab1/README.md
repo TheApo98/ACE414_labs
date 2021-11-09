@@ -74,6 +74,99 @@ char * one_time_pad_DECR(char * encrMsg){
 #define ALPHABET_SIZE 26
 #define NUM_SIZE 10
 
+// Ceasar's cipher
+char * ceasars_cipher_ENCR(char * msg, int key){
+    char * cipherText = (char *) malloc(strlen(msg)); 
+    int charVal = 0;
+    for(int i=0; i<strlen(msg); i++){
+        charVal = (int)msg[i];
+        if(msg[i] >= 'A' && msg[i]<='Z'){
+            charVal = charVal - 'A';
+            *(cipherText + i) = ((charVal + key) % ALPHABET_SIZE) + 'A';
+        }
+        else if(msg[i] >= 'a' && msg[i]<='z'){
+            charVal = charVal - 'a';
+            *(cipherText + i) = ((charVal + key) % ALPHABET_SIZE) + 'a';
+        }
+        else if(isdigit(msg[i]) != 0){
+            charVal = charVal - '0';
+            *(cipherText + i) = ((charVal + key) % NUM_SIZE) + '0';
+        }
+        else
+            *(cipherText + i) = *(msg + i);
+    }
+    return cipherText;
+}
+```
+This function requires two(2) arguments, the plain text (msg) and an integer, the key. Again, with the help of a ```for``` loop, each character of the plain text is shifted properly, according to the value of the key. We have four(4) different cases:
+
+1. ***Character is Uppercase letter (A-Z)***
+   
+   >First we clear the ASCII table offset to get a character value 0-25 (Range of the English alphabet): 
+   ```c
+   charVal = charVal - 'A';
+   ```
+   >The decimal value of the key and the current character of the plaintext are added and then we get the remainder of the division (modulo operator) with the number '26' (Length of the English alphabet), to achieve a cyclic shift among the letters of the Alphabet. Finally, we restore the ASCII table offset by adding the result with the character 'A', to get the ciphered character.  
+   ```c
+   *(cipherText + i) = ((charVal + key) % ALPHABET_SIZE) + 'A';
+   ```  
+2. ***Character is Lowercase letter (a-z)***
+   
+   >Same as the first case but we subtract and add with the character 'a'. 
+3. ***Character is a number (0-9)***
+   
+   >Same as the first case but we subtract and add with the character '0'. Also the remainder of the division happens with the nuber '10' (Size of the decimal number set). 
+4. ***Character is a special character (\*,@,!)***
+   
+   >This case is used to skip special characters from the encryption process. They are just copied to the ciphered text string. 
+
+
+```c
+char * ceasars_cipher_DECR(char * encMsg, int key){
+    char * plainText = (char *) malloc(strlen(encMsg)); 
+    int charVal = 0;
+    for(int i=0; i<strlen(encMsg); i++){
+        charVal = (int)encMsg[i];
+        if(encMsg[i] >= 'A' && encMsg[i] <= 'Z'){
+            charVal = charVal - 'A';
+            *(plainText + i) = abs((abs(charVal - key) % ALPHABET_SIZE) - ALPHABET_SIZE) + 'A';
+        }
+        else if(encMsg[i] >= 'a' && encMsg[i] <= 'z'){
+            charVal = charVal - 'a';
+            *(plainText + i) = abs((abs(charVal - key) % ALPHABET_SIZE) - ALPHABET_SIZE) + 'a';
+        }
+        else if(isdigit(encMsg[i]) != 0){
+            charVal = charVal - '0';
+            *(plainText + i) = abs((abs(charVal - key) % NUM_SIZE) - NUM_SIZE) + '0';
+        }
+        else
+            *(plainText + i) = *(encMsg + i);
+    }
+    return plainText;
+}
+```
+This function is complementary to ```ceasars_cipher_ENCR(char * msg, int key)```. It also requires two(2) arguments, the ciphered text (encMsg) and an integer, the key. Again, with the help of a ```for``` loop, each character of the ciphered text is shifted back properly, according to the value of the key, to decrypt the input string. We have four(4) different cases:
+
+1. ***Character is Uppercase letter (A-Z)***
+   
+   >First, in the same way as before, we clear the ASCII table offset to get a character value 0-25 (Range of the English alphabet): 
+   ```c
+   charVal = charVal - 'A';
+   ```
+   >The decimal value of the key and the current character of the ciphered text are subtracted and then we get the remainder of the division (modulo operator) with the number '26' (Length of the English alphabet), to achieve a cyclic shift among the letters of the Alphabet. The result is the complement of the value of the plain text character we are trying to decipher. So, to get the value, we subtract with the the number '26' (Length of the English alphabet). Finally, we restore the ASCII table offset by adding the result with the character 'A', to get the plain text character: 
+   ```c
+   *(plainText + i) = abs((abs(charVal - key) % ALPHABET_SIZE) - ALPHABET_SIZE) + 'A';
+   ```  
+2. ***Character is Lowercase letter (a-z)***
+   
+   >Same as the first case but we subtract and add with the character 'a'. 
+3. ***Character is a number (0-9)***
+   
+   >Same as the first case but we subtract and add with the character '0'. Also the remainder of the division happens with the nuber '10' (Size of the decimal number set) and the subtraction of the complement. 
+4. ***Character is a special character (\*,@,!)***
+   
+   >Once again, this case is used to skip special characters from the decryption process. They are just copied to the plain text string. 
+
 
 
 
