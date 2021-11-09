@@ -33,9 +33,9 @@ char random_char() {
 
 // One-time pad
 char * one_time_pad_ENCR(char * msg){
-    randomKEY = (char *) malloc(strlen(msg)+1);
-    char * outputWord = (char *) malloc(strlen(msg)+1); 
-    for(int i=0; i<strlen(msg)+1; i++){
+    randomKEY = (char *) malloc(strlen(msg));
+    char * outputWord = (char *) malloc(strlen(msg)); 
+    for(int i=0; i<strlen(msg); i++){
         *(randomKEY + i) = random_char(); 
         *(outputWord + i) = (char) (*(randomKEY + i) ^ *(msg + i));
         // printf("Output: %d\n", outputWord[i]);    
@@ -156,7 +156,7 @@ int main() {
     }
 
     /*** OTP implementation ***/
-    char * msg = "test1@"; 
+    char * msg = "test1@";
     char * str = one_time_pad_ENCR(msg);
     printf("[OTP] input: %s\n", msg);  
     printf("[OTP] encrypted: %s\n", str);  
