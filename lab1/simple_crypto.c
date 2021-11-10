@@ -47,7 +47,6 @@ char * one_time_pad_DECR(char * encrMsg){
     }
     free(randomKEY);
     return outputWord;
-    // outputWord[strlen(encrMsg)+1] = '\0';
 }
 
 // Ceasar's cipher
