@@ -286,7 +286,7 @@ int x_shift = plTx_letter_val - a_val;
 ```c
 int y_shift = keystream_letter_val - a_val;
 ```
->Adding the two derived values and then using the modulo operator to find the remainder of the division with the number '26' (Length of the English alphabet), we get the ciphered text character value (0-25). <p style="color:red;">Explanation missing!?</p>
+>Adding the two derived values and then using the modulo operator to find the remainder of the division with the number '26' (Length of the English alphabet), we get the ciphered text character value (0-25). 
 To represent it on the ASCII table, the character value is further added the 'A' character ASCII value.
 ```c
 int res = (x_shift + y_shift) % ALPHABET_SIZE;
@@ -345,7 +345,7 @@ int y_shift = keystream_letter_val - a_val;
 ```c
 int x_shift = y_shift - res;
 ```
->To get a usable character from it, the result is subtracted from the value '26' (Length of the English alphabet) and then using the modulo operator to find the remainder of the division with the number '26' (Length of the English alphabet), we get the plain text character value (0-25). <p style="color:red;">Explanation missing!?</p>
+>To get a usable character from it, the result is subtracted from the value '26' (Length of the English alphabet) and then using the modulo operator to find the remainder of the division with the number '26' (Length of the English alphabet), we get the plain text character value (0-25). 
 ```c
 res = abs(ALPHABET_SIZE - x_shift) % ALPHABET_SIZE;
 ```
