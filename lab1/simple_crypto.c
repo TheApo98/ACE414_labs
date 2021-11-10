@@ -5,7 +5,7 @@
 #include "simple_crypto.h"
 
 #define MAX 127                         // max usable character
-#define MIN 32                          // min usable character
+#define MIN 0                           // min usable character
 #define ALPHABET_SIZE 26
 #define NUM_SIZE 10
 #define URANDOM_DEVICE "/dev/urandom"
@@ -186,10 +186,15 @@ int main() {
     }
 
     /*** OTP implementation ***/
-    char * msg = "test1@";
+    char * msg = "test1X@";
     char * str = one_time_pad_ENCR(msg);
     printf("[OTP] input: %s\n", msg);  
-    printf("[OTP] encrypted: %s\n", str);  
+    printf("[OTP] encrypted(decimal): ");  
+    for (int i = 0; i<strlen(str); i++)
+    {
+        printf("[%d] ", str[i]);
+    }
+    printf("\n");
     printf("[OTP] decrypted: %s\n", one_time_pad_DECR(str));  
 
     /*** Ceasar's cipher implementation ***/
