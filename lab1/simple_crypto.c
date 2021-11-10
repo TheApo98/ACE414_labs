@@ -81,11 +81,11 @@ char * ceasars_cipher_DECR(char * encMsg, int key){
     int charVal = 0;
     for(int i=0; i<strlen(encMsg); i++){
         charVal = (int)encMsg[i];
-        if(encMsg[i] >= 'A' && encMsg[i]<='Z'){
+        if(encMsg[i] >= 'A' && encMsg[i] <= 'Z'){
             charVal = charVal - 'A';
             *(plainText + i) = abs((abs(charVal - key) % ALPHABET_SIZE) - ALPHABET_SIZE) + 'A';
         }
-        else if(encMsg[i] >= 'a' && encMsg[i]<='z'){
+        else if(encMsg[i] >= 'a' && encMsg[i] <= 'z'){
             charVal = charVal - 'a';
             *(plainText + i) = abs((abs(charVal - key) % ALPHABET_SIZE) - ALPHABET_SIZE) + 'a';
         }
