@@ -93,6 +93,7 @@ char * one_time_pad_DECR(char * encrMsg){
     for(int i=0; i<strlen(encrMsg)+1; i++){
         *(outputWord + i) = (char) (*(randomKEY + i) ^ *(encrMsg + i));
     }
+    free(randomKEY);
     return outputWord;
 }
 ```
@@ -171,15 +172,24 @@ char * ceasars_cipher_DECR(char * encMsg, int key){
         charVal = (int)encMsg[i];
         if(encMsg[i] >= 'A' && encMsg[i] <= 'Z'){
             charVal = charVal - 'A';
-            *(plainText + i) = abs((abs(charVal - key) % ALPHABET_SIZE) - ALPHABET_SIZE) + 'A';
+            if(charVal - key < 0)
+                *(plainText + i) = abs((abs(charVal - key) % ALPHABET_SIZE) - ALPHABET_SIZE) + 'A';
+            else
+                *(plainText + i) = (abs(charVal - key) % ALPHABET_SIZE) + 'A';
         }
         else if(encMsg[i] >= 'a' && encMsg[i] <= 'z'){
             charVal = charVal - 'a';
-            *(plainText + i) = abs((abs(charVal - key) % ALPHABET_SIZE) - ALPHABET_SIZE) + 'a';
+            if(charVal - key < 0)
+                *(plainText + i) = abs((abs(charVal - key) % ALPHABET_SIZE) - ALPHABET_SIZE) + 'a';
+            else
+                *(plainText + i) = (abs(charVal - key) % ALPHABET_SIZE) + 'a';
         }
         else if(isdigit(encMsg[i]) != 0){
             charVal = charVal - '0';
-            *(plainText + i) = abs((abs(charVal - key) % NUM_SIZE) - NUM_SIZE) + '0';
+            if(charVal - key < 0)
+                *(plainText + i) = abs((abs(charVal - key) % NUM_SIZE) - NUM_SIZE) + '0';
+            else
+                *(plainText + i) = (abs(charVal - key) % NUM_SIZE) + '0';
         }
         else
             *(plainText + i) = *(encMsg + i);
@@ -195,10 +205,16 @@ This function is complementary to ```ceasars_cipher_ENCR(char * msg, int key)```
    ```c
    charVal = charVal - 'A';
    ```
-   >The decimal value of the key and the current character of the ciphered text are subtracted and then we get the remainder of the division (modulo operator) with the number '26' (Length of the English alphabet), to achieve a cyclic shift among the letters of the Alphabet. The result is the complement of the value of the plain text character we are trying to decipher. So, to get the value, we subtract with the the number '26' (Length of the English alphabet). Finally, we restore the ASCII table offset by adding the result with the character 'A', to get the plain text character: 
+   >If the condition ```(charVal - key < 0)``` , the decimal value of the key and the current character of the ciphered text are subtracted and then we get the remainder of the division (modulo operator) with the number '26' (Length of the English alphabet), to achieve a cyclic shift among the letters of the Alphabet. The result is the complement of the value of the plain text character we are trying to decipher. So, to get the value, we subtract with the the number '26' (Length of the English alphabet). Finally, we restore the ASCII table offset by adding the result with the character 'A', to get the plain text character: 
    ```c
-   *(plainText + i) = abs((abs(charVal - key) % ALPHABET_SIZE) - ALPHABET_SIZE) + 'A';
-   ```  
+   if(charVal - key < 0)
+       *(plainText + i) = abs((abs(charVal - key) % ALPHABET_SIZE) - ALPHABET_SIZE) + 'A';
+   ```
+   >If the condition is not met, then the cyclic shift is not needed, so the result is the value of the plain text character we are trying to decipher. Again, the ASCII table offset is restored by adding the result with the character 'A', to get the plain text character:  
+   ```c
+   else 
+       *(plainText + i) = (abs(charVal - key) % ALPHABET_SIZE) + 'A';
+   ````
 2. ***Character is Lowercase letter (a-z)***
    
    >Same as the first case but we subtract and add with the character 'a'. 
@@ -231,13 +247,15 @@ char * vigeneres_cipher_ENCR(char * msg, char * key){
     }
     
     int a_val = (int)'A';                           // value of 'A' in the ASCII table
+    int plTx_letter_val, keystream_letter_val = 0;
+    int x_shift, y_shift, res = 0;
     for(int i=0; i<strlen(msg); i++){
         spelling_check(msg[i], keystream[i]);       //check for spelling errors
-        int plTx_letter_val = (int)*(msg + i); 
-        int keystream_letter_val = (int)*(keystream + i); 
-        int x_shift = plTx_letter_val - a_val; 
-        int y_shift = keystream_letter_val - a_val;
-        int res = (x_shift + y_shift) % ALPHABET_SIZE;
+        plTx_letter_val = (int)*(msg + i); 
+        keystream_letter_val = (int)*(keystream + i); 
+        x_shift = plTx_letter_val - a_val; 
+        y_shift = keystream_letter_val - a_val;
+        res = (x_shift + y_shift) % ALPHABET_SIZE;
         res = res + a_val;
         *(cipherText + i) = (char)res;
     } 
@@ -292,13 +310,16 @@ char * vigeneres_cipher_DECR(char * encMsg, char * key){
         }
     }
     
-    int a_val = (int)'A';                             // value of 'A' in the ASCII table
+    int a_val = (int)'A';                           // value of 'A' in the ASCII table
+    // variable initialization
+    int cipTx_letter_val, keystream_letter_val = 0;
+    int res, x_shift, y_shift = 0;
     for(int i=0; i<strlen(encMsg); i++){
-        int cipTx_letter_val = (int)*(encMsg + i);
-        int keystream_letter_val = (int)*(keystream + i); 
-        int res = cipTx_letter_val - a_val;
-        int y_shift = keystream_letter_val - a_val;
-        int x_shift = y_shift - res;
+        cipTx_letter_val = (int)*(encMsg + i);
+        keystream_letter_val = (int)*(keystream + i); 
+        res = cipTx_letter_val - a_val;
+        y_shift = keystream_letter_val - a_val;
+        x_shift = y_shift - res;
         res = abs(ALPHABET_SIZE - x_shift) % ALPHABET_SIZE;
         *(plainText + i) = (char)(res + a_val);
     } 
