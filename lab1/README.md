@@ -36,6 +36,22 @@ This function returns a random character every time it's called, using the "/dev
 
 <p>&nbsp;</p>
 
+## <center style="color:white;">*Spelling checker*</center>
+
+```c
+void spelling_check(char text_lt, char  key_lt){
+    if (isalpha(text_lt) == 0 || isalpha(key_lt) == 0){
+        fprintf(stderr, "[Vigenere] Plain text or key is not alphabet\n");
+        exit(EXIT_FAILURE);
+    }
+    if (isupper(text_lt) == 0 || isupper(key_lt) == 0){
+        fprintf(stderr, "[Vigenere] Plain text or key is not uppercase\n");
+        exit(EXIT_FAILURE); 
+    }
+}
+```
+This function is explicitly created for the Vigenère's cipher. It is used to check if the key or the plain text is composed of uppercase letters. If that's not the case, the program exits with an error message as shown above. 
+
 <p>&nbsp;</p>
 
 
@@ -232,7 +248,7 @@ for(int i=0; i<strlen(msg); i++){
 }
 ```
 
-Again, using a loop statement, we traverse the characters of the input string (plain text). We check for spelling errors in the key and plain text (see below). 
+Again, using a loop statement, we traverse the characters of the input string (plain text). We check for spelling errors in the key and plain text. 
 >To get the shift for the ***x axis***, we subtract the 'A' character ASCII value from the *plain text* character ASCII value to get number between 0-25 (Range of the English alphabet).
 ```c
 int x_shift = plTx_letter_val - a_val; 
