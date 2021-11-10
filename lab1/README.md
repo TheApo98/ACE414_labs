@@ -24,7 +24,7 @@ To get the version of the gcc compiler, run:
 <p>&nbsp;</p>
 
 ## Functions
-## <center style="color:white;">*Random character generator*</center>
+## <center>*Random character generator*</center>
 
 ```c
 #define MAX 127                         // max usable character
@@ -47,7 +47,7 @@ This function returns a random character every time it's called, using the "/dev
 
 <p>&nbsp;</p>
 
-## <center style="color:white;">*Spelling checker*</center>
+## <center>*Spelling checker*</center>
 
 ```c
 void spelling_check(char text_lt, char  key_lt){
@@ -67,7 +67,7 @@ This function is explicitly created for the Vigenère's cipher. It is used to ch
 
 
 <!-- One-time pad -->
-## <center style="color:white;">*One-time pad cipher*</center>
+## <center>*One-time pad cipher*</center>
 ### *Encryption*
 ```c
 // One-time pad
@@ -100,7 +100,7 @@ char * one_time_pad_DECR(char * encrMsg){
 
 >This is complementary to the ```one_time_pad_ENCR(char * msg)``` function. It decrypts a string that is given as an input (argument). Using the pseudorandom key previously generated, with the help of a ```for``` loop, each character of the key is **XOR-ed** with each character of the ciphered text (encMsg). The characters are then stored in a string , which is returned at the end. 
 
-#### <center style="color:white;">*Observations*</center>
+#### <center>*Observations*</center>
 >The ciphered text doesn't always contain printable characters. This is because the result of the XOR between two characters may exceed the limits of the printable characters of the ASCII table. Be that as it may, the ciphered text can be successfully deciphered.
 
 
@@ -109,7 +109,7 @@ char * one_time_pad_DECR(char * encrMsg){
 <p>&nbsp;</p>
 
 <!-- Ceasar's cipher -->
-## <center style="color:white;">*Ceasar's cipher*</center>
+## <center>*Ceasar's cipher*</center>
 ### *Encryption*
 ```c
 #define ALPHABET_SIZE 26
@@ -229,7 +229,7 @@ This function is complementary to ```ceasars_cipher_ENCR(char * msg, int key)```
 <p>&nbsp;</p>
 
 <!-- Vigenère’s cipher -->
-## <center style="color:white;">*Vigenère’s cipher*</center>
+## <center>*Vigenère’s cipher*</center>
 ### *Encryption*
 ```c
 // Vigenère’s cipher
