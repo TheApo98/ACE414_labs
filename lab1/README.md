@@ -10,6 +10,17 @@ To compile the code, use the following command:
 make
 ```
 
+## GCC version
+To get the version of the gcc compiler, run:
+```bash
+# Command 
+    gcc --version
+
+# Result
+    gcc (Ubuntu 9.3.0-17ubuntu1~20.04) 9.3.0
+```
+
+
 <p>&nbsp;</p>
 
 ## Functions
