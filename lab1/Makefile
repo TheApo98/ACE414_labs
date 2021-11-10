@@ -1,7 +1,7 @@
 progr = simple_crypto
 
 $(progr): $(progr).c 
-	@gcc -o $(progr) $(progr).c
+	@gcc -o demoprogram $(progr).c
 	@echo "Program successfully compiled"
 
 clean:
