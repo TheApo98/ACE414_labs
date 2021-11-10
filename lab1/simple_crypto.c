@@ -14,8 +14,6 @@ static FILE *urandom;
 
 char * randomKEY;
 
-// char uppercase[] = {a,b,c}
-
 
 // Returns a random character (MIN to MAX for ascii table)
 char random_char() {
@@ -28,7 +26,6 @@ char random_char() {
         }
     }
     while (c > MAX || c < MIN);
-    // printf("Random char: %c, dec: %d\n", c, c);      //for debugging
     return (char) c;
 }
 
@@ -39,7 +36,6 @@ char * one_time_pad_ENCR(char * msg){
     for(int i=0; i<strlen(msg); i++){
         *(randomKEY + i) = random_char(); 
         *(outputWord + i) = (char) (*(randomKEY + i) ^ *(msg + i));
-        // printf("Output: %d\n", outputWord[i]);    
     }
     return outputWord;
 }
@@ -49,6 +45,7 @@ char * one_time_pad_DECR(char * encrMsg){
     for(int i=0; i<strlen(encrMsg); i++){
         *(outputWord + i) = (char) (*(randomKEY + i) ^ *(encrMsg + i));
     }
+    free(randomKEY);
     return outputWord;
 }
 
@@ -111,21 +108,20 @@ char * vigeneres_cipher_ENCR(char * msg, char * key){
         if(k == strlen(key)){
             k = 0;
         }
-        // printf("i=%d, k=%d\n", i, k);
     }
-    // printf("Keystream: %s\n", keystream);
     
-    int a_val = (int)'A';               // value of 'A' in the ASCII table
+    int a_val = (int)'A';                           // value of 'A' in the ASCII table
+    int plTx_letter_val, keystream_letter_val = 0;
+    int x_shift, y_shift, res = 0;
     for(int i=0; i<strlen(msg); i++){
         spelling_check(msg[i], keystream[i]);       //check for spelling errors
-        int plTx_letter_val = (int)*(msg + i); 
-        int keystream_letter_val = (int)*(keystream + i); 
-        int x_shift = plTx_letter_val - a_val; 
-        int y_shift = keystream_letter_val - a_val;
-        int res = (x_shift + y_shift) % ALPHABET_SIZE;
+        plTx_letter_val = (int)*(msg + i); 
+        keystream_letter_val = (int)*(keystream + i); 
+        x_shift = plTx_letter_val - a_val; 
+        y_shift = keystream_letter_val - a_val;
+        res = (x_shift + y_shift) % ALPHABET_SIZE;
         res = res + a_val;
         *(cipherText + i) = (char)res;
-        // printf("i=%d, k=%d\n", i, k);
     } 
     
     return cipherText;
@@ -142,20 +138,20 @@ char * vigeneres_cipher_DECR(char * encMsg, char * key){
         if(k == strlen(key)){
             k = 0;
         }
-        // printf("i=%d, k=%d\n", i, k);
     }
-    // printf("Keystream: %s\n", keystream);
     
-    int a_val = (int)'A';               // value of 'A' in the ASCII table
+    int a_val = (int)'A';                           // value of 'A' in the ASCII table
+    // variable initialization
+    int cipTx_letter_val, keystream_letter_val = 0;
+    int res, x_shift, y_shift = 0;
     for(int i=0; i<strlen(encMsg); i++){
-        int cipTx_letter_val = (int)*(encMsg + i);
-        int keystream_letter_val = (int)*(keystream + i); 
-        int res = cipTx_letter_val - a_val;
-        int y_shift = keystream_letter_val - a_val;
-        int x_shift = y_shift - res;
+        cipTx_letter_val = (int)*(encMsg + i);
+        keystream_letter_val = (int)*(keystream + i); 
+        res = cipTx_letter_val - a_val;
+        y_shift = keystream_letter_val - a_val;
+        x_shift = y_shift - res;
         res = abs(ALPHABET_SIZE - x_shift) % ALPHABET_SIZE;
         *(plainText + i) = (char)(res + a_val);
-        // printf("i=%d, k=%d\n", i, k);
     } 
     
     return plainText;
@@ -189,7 +185,7 @@ int main() {
 
     /*** Ceasar's cipher implementation ***/
     msg = "he@llo1"; 
-    int key = 100;
+    int key = 4;
     str = ceasars_cipher_ENCR(msg, key);
     printf("[Ceasars] input: %s\n", msg);  
     printf("[Ceasars] key: %d\n", key);  
