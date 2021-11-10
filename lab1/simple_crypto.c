@@ -31,8 +31,8 @@ char random_char() {
 
 // One-time pad
 char * one_time_pad_ENCR(char * msg){
-    randomKEY = (char *) malloc(strlen(msg));
-    char * outputWord = (char *) malloc(strlen(msg)); 
+    randomKEY = (char *) malloc(sizeof(char)*strlen(msg));
+    char * outputWord = (char *) malloc(sizeof(char)*strlen(msg)); 
     for(int i=0; i<strlen(msg); i++){
         *(randomKEY + i) = random_char(); 
         *(outputWord + i) = (char) (*(randomKEY + i) ^ *(msg + i));
@@ -41,17 +41,18 @@ char * one_time_pad_ENCR(char * msg){
 }
 
 char * one_time_pad_DECR(char * encrMsg){
-    char * outputWord = (char *) malloc(strlen(encrMsg)); 
+    char * outputWord = (char *) malloc(sizeof(char)*strlen(encrMsg)); 
     for(int i=0; i<strlen(encrMsg); i++){
         *(outputWord + i) = (char) (*(randomKEY + i) ^ *(encrMsg + i));
     }
     free(randomKEY);
     return outputWord;
+    // outputWord[strlen(encrMsg)+1] = '\0';
 }
 
 // Ceasar's cipher
 char * ceasars_cipher_ENCR(char * msg, int key){
-    char * cipherText = (char *) malloc(strlen(msg)); 
+    char * cipherText = (char *) malloc(sizeof(char)*strlen(msg)); 
     int charVal = 0;
     for(int i=0; i<strlen(msg); i++){
         charVal = (int)msg[i];
@@ -74,7 +75,7 @@ char * ceasars_cipher_ENCR(char * msg, int key){
 }
 
 char * ceasars_cipher_DECR(char * encMsg, int key){
-    char * plainText = (char *) malloc(strlen(encMsg)); 
+    char * plainText = (char *) malloc(sizeof(char)*strlen(encMsg)); 
     int charVal = 0;
     for(int i=0; i<strlen(encMsg); i++){
         charVal = (int)encMsg[i];
@@ -108,8 +109,8 @@ char * ceasars_cipher_DECR(char * encMsg, int key){
 // Vigenère’s cipher
 char * vigeneres_cipher_ENCR(char * msg, char * key){
     int k = 0;
-    char * keystream = (char *) malloc(strlen(msg)); 
-    char * cipherText = (char *) malloc(strlen(msg)); 
+    char * keystream = (char *) malloc(sizeof(char)*strlen(msg)); 
+    char * cipherText = (char *) malloc(sizeof(char)*strlen(msg)); 
     // Generate the keystream
     for(int i=0; i<strlen(msg); i++){
         *(keystream + i) = *(key + k);
@@ -138,8 +139,8 @@ char * vigeneres_cipher_ENCR(char * msg, char * key){
 
 char * vigeneres_cipher_DECR(char * encMsg, char * key){
     int k = 0;
-    char * keystream = (char *) malloc(strlen(encMsg)); 
-    char * plainText = (char *) malloc(strlen(encMsg)); 
+    char * keystream = (char *) malloc(sizeof(char)*strlen(encMsg)); 
+    char * plainText = (char *) malloc(sizeof(char)*strlen(encMsg)); 
     // Generate the keystream
     for(int i=0; i<strlen(encMsg); i++){
         *(keystream + i) = *(key + k);
@@ -186,10 +187,11 @@ int main() {
     }
 
     /*** OTP implementation ***/
-    char * msg = "test1X@";
-    char * str = one_time_pad_ENCR(msg);
-    printf("[OTP] input: %s\n", msg);  
+    char * msg = (char *) malloc(sizeof(char)*100); 
+    printf("[OTP] input: ");  
+    scanf("%s", msg);
     printf("[OTP] encrypted(decimal): ");  
+    char * str = one_time_pad_ENCR(msg);
     for (int i = 0; i<strlen(str); i++)
     {
         printf("[%d] ", str[i]);
@@ -198,20 +200,23 @@ int main() {
     printf("[OTP] decrypted: %s\n", one_time_pad_DECR(str));  
 
     /*** Ceasar's cipher implementation ***/
-    msg = "he@llo1"; 
-    int key = 10;
+    int key = 0;
+    printf("[Ceasars] input: "); 
+    scanf("%s", msg);
+    printf("[Ceasars] key: ");
+    scanf("%d", &key);  
     str = ceasars_cipher_ENCR(msg, key);
-    printf("[Ceasars] input: %s\n", msg);  
-    printf("[Ceasars] key: %d\n", key);  
     printf("[Ceasars] encrypted: %s\n", str);  
     printf("[Ceasars] decrypted: %s\n", ceasars_cipher_DECR(str, key));  
    
     /*** Vigenère’s cipher implementation ***/
-    msg = "ATTACKATDAWN"; 
-    char * key1 = "LEMON";
+    char * key1 = (char *) malloc(sizeof(char)*100); 
+    
+    printf("[Vigenere] input: ");  
+    scanf("%s", msg);
+    printf("[Vigenere] key: ");
+    scanf("%s", key1);
     str = vigeneres_cipher_ENCR(msg, key1);
-    printf("[Vigenere] input: %s\n", msg);  
-    printf("[Vigenere] key: %s\n", key1);  
     printf("[Vigenere] encrypted: %s\n", str);  
     printf("[Vigenere] decrypted: %s\n", vigeneres_cipher_DECR(str, key1));  
    
