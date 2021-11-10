@@ -28,7 +28,7 @@ To get the version of the gcc compiler, run:
 
 ```c
 #define MAX 127                         // max usable character
-#define MIN 32                          // min usable character
+#define MIN 0                           // min usable character
 #define URANDOM_DEVICE "/dev/urandom"
 char random_char() {
     int c;
