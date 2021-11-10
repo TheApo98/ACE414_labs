@@ -80,15 +80,24 @@ char * ceasars_cipher_DECR(char * encMsg, int key){
         charVal = (int)encMsg[i];
         if(encMsg[i] >= 'A' && encMsg[i] <= 'Z'){
             charVal = charVal - 'A';
-            *(plainText + i) = abs((abs(charVal - key) % ALPHABET_SIZE) - ALPHABET_SIZE) + 'A';
+            if(charVal - key < 0)
+                *(plainText + i) = abs((abs(charVal - key) % ALPHABET_SIZE) - ALPHABET_SIZE) + 'A';
+            else
+                *(plainText + i) = (abs(charVal - key) % ALPHABET_SIZE) + 'A';
         }
         else if(encMsg[i] >= 'a' && encMsg[i] <= 'z'){
             charVal = charVal - 'a';
-            *(plainText + i) = abs((abs(charVal - key) % ALPHABET_SIZE) - ALPHABET_SIZE) + 'a';
+            if(charVal - key < 0)
+                *(plainText + i) = abs((abs(charVal - key) % ALPHABET_SIZE) - ALPHABET_SIZE) + 'a';
+            else
+                *(plainText + i) = (abs(charVal - key) % ALPHABET_SIZE) + 'a';
         }
         else if(isdigit(encMsg[i]) != 0){
             charVal = charVal - '0';
-            *(plainText + i) = abs((abs(charVal - key) % NUM_SIZE) - NUM_SIZE) + '0';
+            if(charVal - key < 0)
+                *(plainText + i) = abs((abs(charVal - key) % NUM_SIZE) - NUM_SIZE) + '0';
+            else
+                *(plainText + i) = (abs(charVal - key) % NUM_SIZE) + '0';
         }
         else
             *(plainText + i) = *(encMsg + i);
@@ -185,7 +194,7 @@ int main() {
 
     /*** Ceasar's cipher implementation ***/
     msg = "he@llo1"; 
-    int key = 4;
+    int key = 10;
     str = ceasars_cipher_ENCR(msg, key);
     printf("[Ceasars] input: %s\n", msg);  
     printf("[Ceasars] key: %d\n", key);  
