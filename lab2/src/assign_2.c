@@ -163,8 +163,36 @@ void keygen(unsigned char *password, unsigned char *key, unsigned char *iv, int 
 void encrypt(unsigned char *plaintext, int plaintext_len, unsigned char *key,
     unsigned char *iv, unsigned char *ciphertext, int bit_mode)
 {
+	EVP_CIPHER_CTX *ctx;
 
-	/* TODO Task B */
+    int len;
+
+    int ciphertext_len;
+
+    /* Create and initialise the context */
+    if(!(ctx = EVP_CIPHER_CTX_new()))
+        handleErrors();
+
+	EVP_CIPHER *cipher;
+	if(bit_mode == 128) 
+		cipher = EVP_aes_128_ecb();
+	else
+		cipher = EVP_aes_256_ecb();
+
+    if(EVP_EncryptInit_ex(ctx, cipher, NULL, key, iv) != 1)
+        handleErrors();
+
+ 
+    if(EVP_EncryptUpdate(ctx, ciphertext, &len, plaintext, plaintext_len) != 1)
+        handleErrors();
+    ciphertext_len = len;
+
+    if(EVP_EncryptFinal_ex(ctx, ciphertext + len, &len) != 1)
+        handleErrors();
+    ciphertext_len += len;
+
+    EVP_CIPHER_CTX_free(ctx);
+
 
 }
 
