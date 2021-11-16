@@ -27,6 +27,7 @@ int verify_cmac(unsigned char *, unsigned char *);
 
 
 /* TODO Declare your function prototypes here... */
+void handleErrors(void);
 
 
 /*
@@ -218,7 +219,11 @@ verify_cmac(unsigned char *cmac1, unsigned char *cmac2)
 
 
 /* TODO Develop your functions here... */
-
+void handleErrors(void)
+{
+    ERR_print_errors_fp(stderr);
+    abort();
+}
 
 
 /*
@@ -296,7 +301,11 @@ main(int argc, char **argv)
 
 
 	/* TODO Develop the logic of your tool here... */
+	FILE *fp;
 
+   	fp = fopen(input_file, "r+");
+	
+	fclose(fp);
 
 
 
