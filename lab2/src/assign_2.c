@@ -28,7 +28,8 @@ int verify_cmac(unsigned char *, unsigned char *);
 
 /* TODO Declare your function prototypes here... */
 void handleErrors(void);
-
+int readFromFile(FILE *fp, char * filename, unsigned char * data);
+int writeToFile(FILE *fp, char * filename, unsigned char * data);
 
 /*
  * Prints the hex value of the input
@@ -143,18 +144,15 @@ void keygen(unsigned char *password, unsigned char *key, unsigned char *iv, int 
 {
 	const unsigned char *salt = NULL;
 	const EVP_CIPHER *cipher;
-	const EVP_MD *hash = EVP_get_digestbyname("sha1");
+	const EVP_MD *hash = EVP_sha1();
 
 	if(bit_mode == 128) 
-		cipher = EVP_get_cipherbyname("aes-128-ecb");
+		cipher = EVP_aes_128_ecb();
 	else
-		cipher = EVP_get_cipherbyname("aes-256-ecb");
+		cipher = EVP_aes_256_ecb();
 
 	if (EVP_BytesToKey(cipher, hash, salt, (unsigned char *)password, strlen((char *)password), 1, key, iv) == 0)
-	{
-		fprintf(stderr, "Error!!\n");
-		exit(EXIT_FAILURE);
-	}
+		handleErrors();
 
 }
 
@@ -225,6 +223,36 @@ void handleErrors(void)
     abort();
 }
 
+int readFromFile(FILE *fp, char * filename, unsigned char * data){
+   	fp = fopen(filename, "r");
+    if(fp == NULL){
+        return 1;
+    }
+    char letter = ' ';
+    int i = 0;
+    while(letter != EOF){
+        letter = fgetc(fp);
+        data[i] = letter;
+        i++;
+    }
+    return 0;
+}
+
+int writeToFile(FILE *fp, char * filename, unsigned char * data){
+   	fp = fopen(filename, "w");
+    if(fp == NULL){
+        return 1;
+    }
+    // for(int i=0; i<strlen((char*)data)-2; i++){
+    //     printf("i=%d\n", i);
+    //     fputc(data[i], fp);
+    //     printf("data[i]=%c\n", data[i]);
+    // }
+
+    fwrite(data , 1 , strlen((char*)data) , fp );
+    // fputs((const char*)data, fp);
+    return 0;
+}
 
 /*
  * Encrypts the input file and stores the ciphertext to the output file
