@@ -29,7 +29,6 @@ int verify_cmac(unsigned char *, unsigned char *);
 /* TODO Declare your function prototypes here... */
 
 
-
 /*
  * Prints the hex value of the input
  * 16 values per line
@@ -139,12 +138,22 @@ check_args(char *input_file, char *output_file, unsigned char *password,
 /*
  * Generates a key using a password
  */
-void
-keygen(unsigned char *password, unsigned char *key, unsigned char *iv,
-    int bit_mode)
+void keygen(unsigned char *password, unsigned char *key, unsigned char *iv, int bit_mode)
 {
+	const unsigned char *salt = NULL;
+	const EVP_CIPHER *cipher;
+	const EVP_MD *hash = EVP_get_digestbyname("sha1");
 
-	/* TODO Task A */
+	if(bit_mode == 128) 
+		cipher = EVP_get_cipherbyname("aes-128-ecb");
+	else
+		cipher = EVP_get_cipherbyname("aes-256-ecb");
+
+	if (EVP_BytesToKey(cipher, hash, salt, (unsigned char *)password, strlen((char *)password), 1, key, iv) == 0)
+	{
+		fprintf(stderr, "Error!!\n");
+		exit(EXIT_FAILURE);
+	}
 
 }
 
@@ -152,8 +161,7 @@ keygen(unsigned char *password, unsigned char *key, unsigned char *iv,
 /*
  * Encrypts the data
  */
-void
-encrypt(unsigned char *plaintext, int plaintext_len, unsigned char *key,
+void encrypt(unsigned char *plaintext, int plaintext_len, unsigned char *key,
     unsigned char *iv, unsigned char *ciphertext, int bit_mode)
 {
 
