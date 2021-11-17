@@ -28,8 +28,8 @@ int verify_cmac(unsigned char *, unsigned char *);
 
 /* TODO Declare your function prototypes here... */
 void handleErrors(void);
-int readFromFile(char * filename, unsigned char * data, int * len);
-int writeToFile(char * filename, unsigned char * data);
+int readFromFile(char * filename, unsigned char * data, int * dataLength);
+int writeToFile(char * filename, unsigned char * data, int dataLength);
 
 /*
  * Prints the hex value of the input
@@ -277,7 +277,7 @@ void handleErrors(void)
     abort();
 }
 
-int readFromFile(char * filename, unsigned char * data, int * len){
+int readFromFile(char * filename, unsigned char * data, int * dataLength){
     FILE *fp;
    	fp = fopen(filename, "rb");
     if(fp == NULL){
@@ -286,9 +286,9 @@ int readFromFile(char * filename, unsigned char * data, int * len){
     /* File commands */ 
     /* (necessary for reading special characters like EOF, etc) */
     fseek(fp, 0, SEEK_END);     // go to file end
-    *len = ftell(fp);           // calculate the file size
+    *dataLength = ftell(fp);           // calculate the file size
     rewind(fp);                 // go to file start and...
-    if(fread(data, *len, sizeof(unsigned char), fp) == 0){
+    if(fread(data, *dataLength, sizeof(unsigned char), fp) == 0){
         fclose(fp);
         return 1;
     }
@@ -296,14 +296,14 @@ int readFromFile(char * filename, unsigned char * data, int * len){
     return 0;
 }
 
-int writeToFile(char * filename, unsigned char * data){
+int writeToFile(char * filename, unsigned char * data, int dataLength){
     FILE *fp;
    	fp = fopen(filename, "wb");
     if(fp == NULL){
         return 1;
     }
 
-    fwrite(data , sizeof(unsigned char) , strlen((char*)data) , fp );
+    fwrite(data , sizeof(unsigned char) , dataLength , fp );
     fclose(fp);
     return 0;
 }
