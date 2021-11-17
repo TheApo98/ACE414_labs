@@ -21,7 +21,7 @@ void encrypt(unsigned char *, int, unsigned char *, unsigned char *,
     unsigned char *, int );
 int decrypt(unsigned char *, int, unsigned char *, unsigned char *, 
     unsigned char *, int);
-void gen_cmac(unsigned char *, size_t, unsigned char *, unsigned char *, int);
+size_t gen_cmac(unsigned char *, size_t, unsigned char *, unsigned char *, int);
 int verify_cmac(unsigned char *, unsigned char *);
 
 
@@ -243,13 +243,35 @@ int decrypt(unsigned char *ciphertext, int ciphertext_len, unsigned char *key,
 /*
  * Generates a CMAC
  */
-void
-gen_cmac(unsigned char *data, size_t data_len, unsigned char *key, 
+size_t gen_cmac(unsigned char *data, size_t data_len, unsigned char *key, 
     unsigned char *cmac, int bit_mode)
 {
 
-	/* TODO Task D */
+    size_t cmac_len = 0;
+    CMAC_CTX *ctx;
 
+    if(!(ctx = CMAC_CTX_new()))
+        handleErrors();
+
+    const EVP_CIPHER *cipher;
+	if(bit_mode == 128) 
+		cipher = EVP_aes_128_ecb();
+	else
+		cipher = EVP_aes_256_ecb();
+
+
+    if(CMAC_Init(ctx, key, (size_t)bit_mode/8, cipher, NULL) != 1)
+        handleErrors();
+
+    if(CMAC_Update(ctx, data, data_len) != 1)
+        handleErrors();
+
+    if(CMAC_Final(ctx, cmac, &cmac_len) != 1)
+        handleErrors();
+
+    CMAC_CTX_free(ctx);
+
+    return cmac_len;
 }
 
 
