@@ -17,7 +17,7 @@ void print_string(unsigned char *, size_t);
 void usage(void);
 void check_args(char *, char *, unsigned char *, int, int);
 void keygen(unsigned char *, unsigned char *, unsigned char *, int);
-void encrypt(unsigned char *, int, unsigned char *, unsigned char *, 
+size_t encrypt(unsigned char *, int, unsigned char *, unsigned char *, 
     unsigned char *, int );
 int decrypt(unsigned char *, int, unsigned char *, unsigned char *, 
     unsigned char *, int);
@@ -160,7 +160,7 @@ void keygen(unsigned char *password, unsigned char *key, unsigned char *iv, int 
 /*
  * Encrypts the data
  */
-void encrypt(unsigned char *plaintext, int plaintext_len, unsigned char *key,
+size_t encrypt(unsigned char *plaintext, int plaintext_len, unsigned char *key,
     unsigned char *iv, unsigned char *ciphertext, int bit_mode)
 {
 	EVP_CIPHER_CTX *ctx;
@@ -194,7 +194,7 @@ void encrypt(unsigned char *plaintext, int plaintext_len, unsigned char *key,
 
     EVP_CIPHER_CTX_free(ctx);
 
-
+	return (size_t)ciphertext_len;
 }
 
 
