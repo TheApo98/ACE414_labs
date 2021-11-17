@@ -30,6 +30,7 @@ int verify_cmac(unsigned char *, unsigned char *);
 void handleErrors(void);
 int readFromFile(char * filename, unsigned char * data, int * data_len);
 int writeToFile(char * filename, unsigned char * data, int data_len);
+unsigned char * byteAppend(unsigned char* dst, unsigned char* src, int dst_len, int src_len);
 
 /*
  * Prints the hex value of the input
@@ -331,6 +332,23 @@ int writeToFile(char * filename, unsigned char * data, int data_len){
 	}
     fclose(fp);
     return 0;
+}
+
+/**
+ * @brief Appends source bytes to destination bytes
+ * 
+ * @param dst Destination bytes
+ * @param src Source bytes
+ * @param dst_len Destination buffer size
+ * @param src_len Source buffer size
+ * @return unsigned char* The buffer with the concatenated bytes
+ */
+unsigned char * byteAppend(unsigned char* dst, unsigned char* src, int dst_len, int src_len){
+    unsigned char * buff = dst;
+    for(int i=0; i<src_len; i++){
+        buff[dst_len+i] = src[i];
+    }
+    return buff;
 }
 
 /*
