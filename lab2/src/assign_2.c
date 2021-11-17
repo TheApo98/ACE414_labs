@@ -204,13 +204,39 @@ void encrypt(unsigned char *plaintext, int plaintext_len, unsigned char *key,
 int decrypt(unsigned char *ciphertext, int ciphertext_len, unsigned char *key,
     unsigned char *iv, unsigned char *plaintext, int bit_mode)
 {
-	int plaintext_len = 0;
-	int len = 0;
+    EVP_CIPHER_CTX *ctx;
 
-	/*TODO Task C */
-	
+    int len;
 
-	return plaintext_len;
+    int plaintext_len;
+
+    if(!(ctx = EVP_CIPHER_CTX_new()))
+        handleErrors();
+
+    const EVP_CIPHER *cipher;
+	if(bit_mode == 128) 
+		cipher = EVP_aes_128_ecb();
+	else
+		cipher = EVP_aes_256_ecb();
+
+
+    if(1 != EVP_DecryptInit_ex(ctx, cipher, NULL, key, iv))
+        handleErrors();
+
+
+    if(1 != EVP_DecryptUpdate(ctx, plaintext, &len, ciphertext, ciphertext_len))
+        handleErrors();
+    plaintext_len = len;
+
+
+    if(1 != EVP_DecryptFinal_ex(ctx, plaintext + len, &len))
+        handleErrors();
+    plaintext_len += len;
+    
+
+    EVP_CIPHER_CTX_free(ctx);
+
+    return plaintext_len;
 }
 
 
