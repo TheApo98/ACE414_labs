@@ -28,8 +28,8 @@ int verify_cmac(unsigned char *, unsigned char *);
 
 /* TODO Declare your function prototypes here... */
 void handleErrors(void);
-int readFromFile(FILE *fp, char * filename, unsigned char * data);
-int writeToFile(FILE *fp, char * filename, unsigned char * data);
+int readFromFile(char * filename, unsigned char * data, int * len);
+int writeToFile(char * filename, unsigned char * data);
 
 /*
  * Prints the hex value of the input
@@ -170,10 +170,11 @@ void encrypt(unsigned char *plaintext, int plaintext_len, unsigned char *key,
     int ciphertext_len;
 
     /* Create and initialise the context */
-    if(!(ctx = EVP_CIPHER_CTX_new()))
+    if(!(ctx = EVP_CIPHER_CTX_new())){
         handleErrors();
+	}
 
-	EVP_CIPHER *cipher;
+	const EVP_CIPHER *cipher;
 	if(bit_mode == 128) 
 		cipher = EVP_aes_128_ecb();
 	else
@@ -200,15 +201,14 @@ void encrypt(unsigned char *plaintext, int plaintext_len, unsigned char *key,
 /*
  * Decrypts the data and returns the plaintext size
  */
-int
-decrypt(unsigned char *ciphertext, int ciphertext_len, unsigned char *key,
+int decrypt(unsigned char *ciphertext, int ciphertext_len, unsigned char *key,
     unsigned char *iv, unsigned char *plaintext, int bit_mode)
 {
-	int plaintext_len;
-
-	plaintext_len = 0;
+	int plaintext_len = 0;
+	int len = 0;
 
 	/*TODO Task C */
+	
 
 	return plaintext_len;
 }
@@ -251,34 +251,34 @@ void handleErrors(void)
     abort();
 }
 
-int readFromFile(FILE *fp, char * filename, unsigned char * data){
-   	fp = fopen(filename, "r");
+int readFromFile(char * filename, unsigned char * data, int * len){
+    FILE *fp;
+   	fp = fopen(filename, "rb");
     if(fp == NULL){
         return 1;
     }
-    char letter = ' ';
-    int i = 0;
-    while(letter != EOF){
-        letter = fgetc(fp);
-        data[i] = letter;
-        i++;
+    /* File commands */ 
+    /* (necessary for reading special characters like EOF, etc) */
+    fseek(fp, 0, SEEK_END);     // go to file end
+    *len = ftell(fp);           // calculate the file size
+    rewind(fp);                 // go to file start and...
+    if(fread(data, *len, sizeof(unsigned char), fp) == 0){
+        fclose(fp);
+        return 1;
     }
+    fclose(fp);
     return 0;
 }
 
-int writeToFile(FILE *fp, char * filename, unsigned char * data){
-   	fp = fopen(filename, "w");
+int writeToFile(char * filename, unsigned char * data){
+    FILE *fp;
+   	fp = fopen(filename, "wb");
     if(fp == NULL){
         return 1;
     }
-    // for(int i=0; i<strlen((char*)data)-2; i++){
-    //     printf("i=%d\n", i);
-    //     fputc(data[i], fp);
-    //     printf("data[i]=%c\n", data[i]);
-    // }
 
-    fwrite(data , 1 , strlen((char*)data) , fp );
-    // fputs((const char*)data, fp);
+    fwrite(data , sizeof(unsigned char) , strlen((char*)data) , fp );
+    fclose(fp);
     return 0;
 }
 
