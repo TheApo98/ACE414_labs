@@ -22,7 +22,7 @@ size_t encrypt(unsigned char *, int, unsigned char *, unsigned char *,
 int decrypt(unsigned char *, int, unsigned char *, unsigned char *, 
     unsigned char *, int);
 size_t gen_cmac(unsigned char *, size_t, unsigned char *, unsigned char *, int);
-int verify_cmac(unsigned char *, unsigned char *);
+int verify_cmac(unsigned char *, unsigned char *, size_t cmac_len);
 
 
 
@@ -279,16 +279,12 @@ size_t gen_cmac(unsigned char *data, size_t data_len, unsigned char *key,
 /*
  * Verifies a CMAC
  */
-int
-verify_cmac(unsigned char *cmac1, unsigned char *cmac2)
+int verify_cmac(unsigned char *cmac1, unsigned char *cmac2, size_t cmac_len)
 {
-	int verify;
-
-	verify = 0;
-
-	/* TODO Task E */
-
-	return verify;
+	if(cmac1 == NULL || cmac2 == NULL)
+        return 0;
+        
+    return(memcmp(cmac1, cmac2, cmac_len) == 0);
 }
 
 
