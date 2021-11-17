@@ -303,7 +303,10 @@ int writeToFile(char * filename, unsigned char * data, int data_len){
         return 1;
     }
 
-    fwrite(data , sizeof(unsigned char) , data_len , fp );
+    if(fwrite(data , sizeof(unsigned char) , data_len , fp ) == 0){
+		fclose(fp);
+        return 1;
+	}
     fclose(fp);
     return 0;
 }
