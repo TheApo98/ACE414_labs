@@ -433,7 +433,7 @@ main(int argc, char **argv)
 	
 	switch (op_mode)
 	{
-	case 0:			/* Encryption */	
+	case 0:						/* Encryption */	
 		// Generate key
 		keygen(password, key, iv, bit_mode);
 
@@ -456,10 +456,9 @@ main(int argc, char **argv)
 		plainText 	= (unsigned char*)realloc(plainText, sizeof(unsigned char)*plain_len);
 
 		// Print plain and cipher Text
-		printf("\tPlain text len: %d\n", plain_len);
+		printf("\tPlain text length: %d\n", plain_len);
 		print_string(plainText, (size_t)plain_len);
-
-		printf("\tCipher text len: %d\n", (int)cipher_len);
+		printf("\tCipher text length: %d\n", (int)cipher_len);
 		print_hex(cipherText, cipher_len);
 
 		// Write cipher text to file
@@ -468,10 +467,45 @@ main(int argc, char **argv)
 			exit(EXIT_FAILURE);
 		}
 
+		break;
+
+	case 1:						/* Decryption */
+		// Generate key
+		keygen(password, key, iv, bit_mode);
+
+		// Print password, key and iv
+		printf("Pass: %s\n", password);
+		printf("Key: ");
+		print_hex(key, sizeof(char)*bit_mode/8);
+		printf("IV: ");
+		print_hex(iv, sizeof(char)*bit_mode/8);
+
+		// Read cipher from file
+		if(readFromFile(input_file, cipherText, (int*)&cipher_len) == 1){
+			fprintf(stderr, "Failed to read from file\n");
+			exit(EXIT_FAILURE);
+		}
+		// Decryption
+		int plain_len = decrypt(cipherText, cipher_len, key, iv, plainText, bit_mode);
 		
+		// Reallocation to aviod memory leaks 
+		cipherText 	= (unsigned char*)realloc(cipherText, sizeof(unsigned char)*cipher_len);
+		plainText 	= (unsigned char*)realloc(plainText, sizeof(unsigned char)*plain_len);
+		
+		// Print plain and cipher Text
+		printf("\tCipher text length: %d\n", (int)cipher_len);
+		print_hex(cipherText, cipher_len);
+		printf("\tPlain text length: %d\n", plain_len);
+		print_string(plainText, (size_t)plain_len);
+
+		// Write plain text to file
+		if(writeToFile(output_file, plainText, plain_len) == 1){
+			fprintf(stderr, "Failed to write to file\n");
+			exit(EXIT_FAILURE);
+		}
+
 		break;
-	case 1:			// Decryption
-		break;
+
 	case 2:			// Sign and Encrypt
 		break;
 	case 3:			// Verify and decrypt
@@ -511,3 +545,10 @@ main(int argc, char **argv)
 	/* END */
 	return 0;
 }
+
+
+/*
+Commands:
+1) ./assign_2 -i ../files/encryptme_256.txt -o ../files/decryptme_256.txt -p TUC2017030142 -b 256 -e
+2) ./assign_2 -i ../files/hpy414_decryptme_128.txt -o ../files/hpy414_encryptme_128.txt -p hpy414 -b 128 -d
+*/
