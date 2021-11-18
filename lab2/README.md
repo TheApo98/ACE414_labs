@@ -207,7 +207,7 @@ This function is used to encrypt the plain text data with a key and IV that are 
 2. ***Cipher mode:***<br>
     Depending on the caller input, AES_ECB mode with 128 or 256 bit key length is selected
 3. ***Encryption process initialization:***
-    The encryption starts with the cipher contex, cipher mode, implementation, key and IV as an input. Implementation is set to "NULL".
+    The encryption starts with the cipher context, cipher mode, implementation, key and IV as an input. Implementation is set to "NULL".
 4. ***Encryption process update:***
     The encryption is updated with the plain text information and the cipherText pointer for storing the encrypted data. Again the cipher context is necessary as input
 5. ***Encryption process finalization:***
@@ -219,6 +219,67 @@ Every stage of the encryption process is checked for error. If an error occurs, 
 The function returns the length of the ciphered data, useful value for printing and writing the data to files without any problems.
 
 
+## <center>*Data Decryption*</center>
+```c
+int decrypt(unsigned char *ciphertext, int ciphertext_len, unsigned char *key,
+    unsigned char *iv, unsigned char *plaintext, int bit_mode)
+{
+	// Declare context
+    EVP_CIPHER_CTX *ctx;
+
+    int len;
+    int plaintext_len;
+
+    // Initialize the context 
+    if(!(ctx = EVP_CIPHER_CTX_new()))
+        handleErrors();
+
+	// Bit mode 128 or 256
+    const EVP_CIPHER *cipher;
+	if(bit_mode == 128) 
+		cipher = EVP_aes_128_ecb();
+	else
+		cipher = EVP_aes_256_ecb();
+
+
+	// Intialize the decryption
+    if(EVP_DecryptInit_ex(ctx, cipher, NULL, key, iv) != 1)
+        handleErrors();
+
+	// Add the data to be decrypted
+    if(EVP_DecryptUpdate(ctx, plaintext, &len, ciphertext, ciphertext_len) != 1)
+        handleErrors();
+	// Set the plain Text length
+    plaintext_len = len;
+
+	// Finalize the decryption, append data to the plainText
+    if(EVP_DecryptFinal_ex(ctx, plaintext + len, &len) != 1)
+        handleErrors();
+	// Update the plain Text length
+    plaintext_len += len;
+
+	// Free the context
+    EVP_CIPHER_CTX_free(ctx);
+
+    return plaintext_len;
+}
+```
+This function is used to decrypt the cipher text data with a key and IV that are given as an input. There are multiple stages for the decryption process:
+1. ***Context initialization:***<br>
+    A new cipher contex object is created 
+2. ***Cipher mode:***<br>
+    Depending on the caller input, AES_ECB mode with 128 or 256 bit key length is selected
+3. ***Decryption process initialization:***
+    The decryption starts with the cipher context, cipher mode, implementation, key and IV as an input. Implementation is set to "NULL".
+4. ***Decryption process update:***
+    The decryption is updated with the cipher text information and the plainText pointer for storing the data. Again the cipher context is necessary as input
+5. ***Decryption process finalization:***
+    The decryption is finalized and more plain text data are appended to the previously created plain text. The length of the new data is returned (call by reference). Again the cipher context is necessary as input
+6. ***Context clean up:***<br>
+    The cipher context is freed and the decryption ends
+
+Every stage of the decryption process is checked for error. If an error occurs, is handled by ```handleErrors()```.<br>
+The function returns the length of the plain text data, useful value for printing and writing the data to files without any problems.
 
 <p>&nbsp;</p>
 
