@@ -221,16 +221,16 @@ int decrypt(unsigned char *ciphertext, int ciphertext_len, unsigned char *key,
 		cipher = EVP_aes_256_ecb();
 
 
-    if(1 != EVP_DecryptInit_ex(ctx, cipher, NULL, key, iv))
+    if(EVP_DecryptInit_ex(ctx, cipher, NULL, key, iv) != 1)
         handleErrors();
 
 
-    if(1 != EVP_DecryptUpdate(ctx, plaintext, &len, ciphertext, ciphertext_len))
+    if(EVP_DecryptUpdate(ctx, plaintext, &len, ciphertext, ciphertext_len) != 1)
         handleErrors();
     plaintext_len = len;
 
 
-    if(1 != EVP_DecryptFinal_ex(ctx, plaintext + len, &len))
+    if(EVP_DecryptFinal_ex(ctx, plaintext + len, &len) != 1)
         handleErrors();
     plaintext_len += len;
     
