@@ -434,6 +434,7 @@ main(int argc, char **argv)
 	unsigned char * plainText 	= (unsigned char *)malloc(sizeof(unsigned char)*plain_len);
 	unsigned char * cipherText 	= (unsigned char *)malloc(sizeof(unsigned char)*plain_len);
 	unsigned char * cmac 		= (unsigned char *)malloc(sizeof(unsigned char)*plain_len);
+	unsigned char * cipher_cmac = (unsigned char *)malloc(sizeof(unsigned char)*plain_len);
 	
 	switch (op_mode)
 	{
@@ -452,12 +453,12 @@ main(int argc, char **argv)
 		cipherText 	= (unsigned char*)realloc(cipherText, sizeof(unsigned char)*cipher_len);
 		plainText 	= (unsigned char*)realloc(plainText, sizeof(unsigned char)*plain_len);
 
-		// Print password, key
+		/* Print password, key */ 
 		printf("Pass: %s\n", password);
 		printf("Key: ");
 		print_hex(key, sizeof(char)*bit_mode/8);
 		
-		// Print plain and cipher Text
+		/* Print plain and cipher Text */
 		printf("\tPlain text length: %d\n", plain_len);
 		print_string(plainText, (size_t)plain_len);
 		printf("\tCipher text length: %d\n", (int)cipher_len);
@@ -487,12 +488,12 @@ main(int argc, char **argv)
 		cipherText 	= (unsigned char*)realloc(cipherText, sizeof(unsigned char)*cipher_len);
 		plainText 	= (unsigned char*)realloc(plainText, sizeof(unsigned char)*plain_len);
 		
-		// Print password, key 
+		/* Print password, key */ 
 		printf("Pass: %s\n", password);
 		printf("Key: ");
 		print_hex(key, sizeof(char)*bit_mode/8);
 
-		// Print plain and cipher Text
+		/* Print plain and cipher Text */
 		printf("\tCipher text length: %d\n", (int)cipher_len);
 		print_hex(cipherText, cipher_len);
 		printf("\tPlain text length: %d\n", plain_len);
@@ -506,7 +507,7 @@ main(int argc, char **argv)
 
 		break;
 
-	case 2:			/* Sign and Encrypt */
+	case 2:			/* Signing and Encryption */
 		// Generate key
 		keygen(password, key, iv, bit_mode);
 
@@ -517,16 +518,16 @@ main(int argc, char **argv)
 		}
 		// Encrypt
 		cipher_len = encrypt(plainText, (size_t)plain_len, key, iv, cipherText, bit_mode);
-		/* Reallocation to aviod memory leaks */
+		// Reallocation to aviod memory leaks 
 		plainText = (unsigned char*)realloc(plainText, sizeof(unsigned char)*plain_len);
 		cipherText = (unsigned char*)realloc(cipherText, sizeof(unsigned char)*cipher_len);
 
-		// Print password, key 
+		/* Print password, key */
 		printf("Pass: %s\n", password);
 		printf("Key: ");
 		print_hex(key, sizeof(char)*bit_mode/8);	
 
-		// Print plain and cipher Text
+		/* Print plain and cipher Text */
 		printf("\tPlain text length: %d\n", plain_len);
 		print_string(plainText, (size_t)plain_len);
 		printf("\tCipher text length: %d\n", (int)cipher_len);
@@ -538,10 +539,10 @@ main(int argc, char **argv)
 		unsigned char * buff = byteAppend(cipherText, cmac, cipher_len, cmac_len);
 		cipher_cmac_len = cipher_len + cmac_len;
 
-		// Print cmac
+		/* Print cmac */ 
 		printf("\tCMAC with length: %d\n", (int)cmac_len);
 		print_hex(cmac, cmac_len);    
-		//Print concatenated string
+		/* Print concatenated string */
 		printf("\tConcatenated string with length: %d\n", cipher_cmac_len);
 		print_hex(buff, cipher_cmac_len);
 
@@ -552,7 +553,7 @@ main(int argc, char **argv)
 		}
 
 		break;
-	case 3:			// Verify and decrypt
+	case 3:			/* Verification and decryption */
 		break;
 	default:
 		break;
