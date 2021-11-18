@@ -21,8 +21,8 @@ size_t encrypt(unsigned char *, int, unsigned char *, unsigned char *,
     unsigned char *, int );
 int decrypt(unsigned char *, int, unsigned char *, unsigned char *, 
     unsigned char *, int);
-size_t gen_cmac(unsigned char *, size_t, unsigned char *, unsigned char *, int);
-int verify_cmac(unsigned char *, unsigned char *, size_t cmac_len);
+void gen_cmac(unsigned char *, size_t, unsigned char *, unsigned char *, int);
+int verify_cmac(unsigned char *, unsigned char *);
 
 
 
@@ -82,9 +82,9 @@ usage(void)
 	printf(
 	    "\n"
 	    "Usage:\n"
-	    "    assign_1 -i in_file -o out_file -p passwd -b bits" 
+	    "    assign_2 -i in_file -o out_file -p passwd -b bits" 
 	        " [-d | -e | -s | -v]\n"
-	    "    assign_1 -h\n"
+	    "    assign_2 -h\n"
 	);
 	printf(
 	    "\n"
@@ -244,11 +244,10 @@ int decrypt(unsigned char *ciphertext, int ciphertext_len, unsigned char *key,
 /*
  * Generates a CMAC
  */
-size_t gen_cmac(unsigned char *data, size_t data_len, unsigned char *key, 
+void gen_cmac(unsigned char *data, size_t data_len, unsigned char *key, 
     unsigned char *cmac, int bit_mode)
 {
-
-    size_t cmac_len = 0;
+    size_t cmac_len = 0;	// not used anymore
     CMAC_CTX *ctx;
 
     if(!(ctx = CMAC_CTX_new()))
@@ -272,19 +271,19 @@ size_t gen_cmac(unsigned char *data, size_t data_len, unsigned char *key,
 
     CMAC_CTX_free(ctx);
 
-    return cmac_len;
+    // return cmac_len;
 }
 
 
 /*
  * Verifies a CMAC
  */
-int verify_cmac(unsigned char *cmac1, unsigned char *cmac2, size_t cmac_len)
+int verify_cmac(unsigned char *cmac1, unsigned char *cmac2)
 {
 	if(cmac1 == NULL || cmac2 == NULL)
         return 0;
         
-    return(memcmp(cmac1, cmac2, cmac_len) == 0);
+    return(memcmp(cmac1, cmac2, BLOCK_SIZE) == 0);
 }
 
 
@@ -427,7 +426,7 @@ main(int argc, char **argv)
 	int 	plain_len 		= 256;      // random length
 	int 	cipher_cmac_len	= 0;
 	size_t 	cipher_len 		= 0;
-	size_t 	cmac_len 		= 0;      
+	size_t 	cmac_len 		= BLOCK_SIZE;      
 	unsigned char * iv = NULL;
 	// unsigned char * iv 			= (unsigned char *)malloc(sizeof(char)*bit_mode/8);
 	unsigned char * key			= (unsigned char *)malloc(sizeof(char)*bit_mode/8); 
@@ -535,7 +534,7 @@ main(int argc, char **argv)
 		print_hex(cipherText, cipher_len);
 
 		// Generate the cmac
-		cmac_len = gen_cmac(plainText, (size_t)plain_len, key, cmac, bit_mode);
+		gen_cmac(plainText, (size_t)plain_len, key, cmac, bit_mode);
 		// Concatenate cipherText and cmac
 		unsigned char * buff = byteAppend(cipherText, cmac, cipher_len, cmac_len);
 		cipher_cmac_len = cipher_len + cmac_len;
@@ -564,7 +563,6 @@ main(int argc, char **argv)
 			fprintf(stderr, "Failed to read from file\n");
 			exit(EXIT_FAILURE);
 		}
-		cmac_len = bit_mode/8;
 		cipher_len = cipher_cmac_len - cmac_len;
 
 		// Extract cipherText from concatenated "string"
@@ -589,14 +587,14 @@ main(int argc, char **argv)
 		print_string(plainText, (size_t)plain_len);
 		
 		// Generate CMAC for verification
-		cmac_len = gen_cmac(plainText, (size_t)plain_len, key, cmac_gen, bit_mode);
+		gen_cmac(plainText, (size_t)plain_len, key, cmac_gen, bit_mode);
 
 		/* Print cmac from generator */ 
 		printf("\tCMAC(Gen) with length: %d\n", (int)cmac_len);
 		print_hex(cmac_gen, cmac_len); 
 
 		// Check for verification
-		if(verify_cmac(cmac, cmac_gen, cmac_len) == 1)
+		if(verify_cmac(cmac, cmac_gen) == 1)
 			printf("\tVerification successful!!!\n");
 		else
 			printf("\tVerification failed!!!\n");
