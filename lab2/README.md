@@ -118,7 +118,51 @@ The function can also be used for unconcatenating data.
 
 <p>&nbsp;</p>
 
-## Functions
+## Main Functions
+These functions provide the main functionality of the tool for encrypting, decrypting, signing and verifying data.
+
+## <center>*Key Derivation Function (KDF)*</center>
+```c
+void keygen(unsigned char *password, unsigned char *key, unsigned char *iv, int bit_mode)
+{	
+	// No salt is used
+	const unsigned char *salt = NULL;
+	// Declare cipher
+	const EVP_CIPHER *cipher;
+	// Set the hash function to sha1
+	const EVP_MD *hash = EVP_sha1();
+
+	// Bit mode 128 or 256
+	if(bit_mode == 128) 
+		cipher = EVP_aes_128_ecb();
+	else
+		cipher = EVP_aes_256_ecb();
+
+	// Generate the key using the above
+	if (EVP_BytesToKey(cipher, hash, salt, (unsigned char *)password, strlen((char *)password), 1, key, iv) == 0)
+		handleErrors();
+
+}
+```
+This function is used to generate a key and an Initialization Vector(IV), using the AES_ECB from the EVP API. In our case, the IV is not needed.<br> 
+By default, for generating a key and IV with input data with the ```EVP_BytesToKey()``` function, some things are required:
+1. ***Cipher:*** AES_ECB with 128 or 256 bit key length 
+2. ***Hashing algorithm:*** SHA1 in our case
+3. ***Salt:*** a plain text to be added to the hash function with the data (Optional in our case)
+4. ***Password:*** the data to be hashed, specified by the user
+5. ***Count*** the iteration count ('1' in our case)
+6. ***Key pointer:*** to store the generated key
+7. ***IV pointer:*** to store the generated IV (NULL in our case)
+
+The function returns an error through ```handleErrors()``` function if there is a problem with the key generation. 
+
+## <center>*Data Encryption*</center>
+
+
+<p>&nbsp;</p>
+
+## <center>*Main Function*</center>
+The cases '0' and '1' are straight forward and the comments in source file are sufficient, so we won't get in to much detail
 
 
 ## License
