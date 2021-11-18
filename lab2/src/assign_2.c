@@ -424,13 +424,16 @@ main(int argc, char **argv)
 	/* TODO Develop the logic of your tool here... */
 
 	// Initialize variables 
-	int plain_len = 256;      // random length
-	size_t cipher_len = 0;      
+	int 	plain_len 		= 256;      // random length
+	int 	cipher_cmac_len	= 0;
+	size_t 	cipher_len 		= 0;
+	size_t 	cmac_len 		= 0;      
 	unsigned char * iv = NULL;
 	// unsigned char * iv 			= (unsigned char *)malloc(sizeof(char)*bit_mode/8);
 	unsigned char * key			= (unsigned char *)malloc(sizeof(char)*bit_mode/8); 
 	unsigned char * plainText 	= (unsigned char *)malloc(sizeof(unsigned char)*plain_len);
 	unsigned char * cipherText 	= (unsigned char *)malloc(sizeof(unsigned char)*plain_len);
+	unsigned char * cmac 		= (unsigned char *)malloc(sizeof(unsigned char)*plain_len);
 	
 	switch (op_mode)
 	{
@@ -504,6 +507,50 @@ main(int argc, char **argv)
 		break;
 
 	case 2:			/* Sign and Encrypt */
+		// Generate key
+		keygen(password, key, iv, bit_mode);
+
+		// Read plain text from file
+		if(readFromFile(input_file, plainText, &plain_len) == 1){
+			fprintf(stderr, "Failed to read from file\n");
+			exit(EXIT_FAILURE);
+		}
+		// Encrypt
+		cipher_len = encrypt(plainText, (size_t)plain_len, key, iv, cipherText, bit_mode);
+		/* Reallocation to aviod memory leaks */
+		plainText = (unsigned char*)realloc(plainText, sizeof(unsigned char)*plain_len);
+		cipherText = (unsigned char*)realloc(cipherText, sizeof(unsigned char)*cipher_len);
+
+		// Print password, key 
+		printf("Pass: %s\n", password);
+		printf("Key: ");
+		print_hex(key, sizeof(char)*bit_mode/8);	
+
+		// Print plain and cipher Text
+		printf("\tPlain text length: %d\n", plain_len);
+		print_string(plainText, (size_t)plain_len);
+		printf("\tCipher text length: %d\n", (int)cipher_len);
+		print_hex(cipherText, cipher_len);
+
+		// Generate the cmac
+		cmac_len = gen_cmac(plainText, (size_t)plain_len, key, cmac, bit_mode);
+		// Concatenate cipherText and cmac
+		unsigned char * buff = byteAppend(cipherText, cmac, cipher_len, cmac_len);
+		cipher_cmac_len = cipher_len + cmac_len;
+
+		// Print cmac
+		printf("\tCMAC with length: %d\n", (int)cmac_len);
+		print_hex(cmac, cmac_len);    
+		//Print concatenated string
+		printf("\tConcatenated string with length: %d\n", cipher_cmac_len);
+		print_hex(buff, cipher_cmac_len);
+
+		// Write cipher and cmac to file
+		if(writeToFile(output_file, buff, cipher_len+cmac_len) == 1){
+			fprintf(stderr, "Failed to write in file\n");
+			exit(EXIT_FAILURE);
+		}
+
 		break;
 	case 3:			// Verify and decrypt
 		break;
@@ -548,4 +595,5 @@ main(int argc, char **argv)
 Commands:
 1) ./assign_2 -i ../files/encryptme_256.txt -o ../files/decryptme_256.txt -p TUC2017030142 -b 256 -e
 2) ./assign_2 -i ../files/hpy414_decryptme_128.txt -o ../files/hpy414_encryptme_128.txt -p hpy414 -b 128 -d
+3) ./assign_2 -i ../files/signme_128.txt -o ../files/verifyme_128.txt -p TUC2017030142 -b 128 -s
 */
