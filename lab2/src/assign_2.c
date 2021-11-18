@@ -422,13 +422,69 @@ main(int argc, char **argv)
 
 
 	/* TODO Develop the logic of your tool here... */
-	FILE *fp;
 
-   	fp = fopen(input_file, "r+");
+	// Initialize variables 
+	int plain_len = 256;      // random length
+	size_t cipher_len = 0;      
+	unsigned char * key			= (unsigned char *)malloc(sizeof(char)*bit_mode/8); 
+	unsigned char * iv 			= (unsigned char *)malloc(sizeof(char)*bit_mode/8);
+	unsigned char * plainText 	= (unsigned char *)malloc(sizeof(unsigned char)*plain_len);
+	unsigned char * cipherText 	= (unsigned char *)malloc(sizeof(unsigned char)*plain_len);
 	
-	fclose(fp);
+	switch (op_mode)
+	{
+	case 0:			/* Encryption */	
+		// Generate key
+		keygen(password, key, iv, bit_mode);
 
+		// Print password, key and iv
+		printf("Pass: %s\n", password);
+		printf("Key: ");
+		print_hex(key, sizeof(char)*bit_mode/8);
+		printf("IV: ");
+		print_hex(iv, sizeof(char)*bit_mode/8);
 
+		// Read plain text from file
+		if(readFromFile(input_file, plainText, &plain_len) == 1){
+			fprintf(stderr, "Failed to read from file\n");
+			exit(EXIT_FAILURE);
+		}
+		// Encryption
+		cipher_len = encrypt(plainText, (size_t)plain_len, key, iv, cipherText, bit_mode);
+		// Reallocation to aviod memory leaks 
+		cipherText 	= (unsigned char*)realloc(cipherText, sizeof(unsigned char)*cipher_len);
+		plainText 	= (unsigned char*)realloc(plainText, sizeof(unsigned char)*plain_len);
+
+		// Print plain and cipher Text
+		printf("\tPlain text len: %d\n", plain_len);
+		print_string(plainText, (size_t)plain_len);
+
+		printf("\tCipher text len: %d\n", (int)cipher_len);
+		print_hex(cipherText, cipher_len);
+
+		// Write cipher text to file
+		if(writeToFile(output_file, cipherText, cipher_len) == 1){
+			fprintf(stderr, "Failed to write to file\n");
+			exit(EXIT_FAILURE);
+		}
+
+		
+		break;
+	case 1:			// Decryption
+		break;
+	case 2:			// Sign and Encrypt
+		break;
+	case 3:			// Verify and decrypt
+		break;
+	default:
+		break;
+	}
+
+	// Free memory
+	free(key);
+	free(iv);
+	free(plainText);
+	free(cipherText);
 
 	/* Initialize the library */
 
