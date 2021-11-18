@@ -49,10 +49,9 @@ We needed to construct some helper functions for reading from files, writing to 
 
 ## <center>*Error Handler*</center>
 ```c
-void handleErrors(void)
-{
-    ERR_print_errors_fp(stderr);
-    abort();
+void handleErrors(void){
+	fprintf(stderr, "Error!! Exiting...\n");
+	exit(EXIT_FAILURE);
 }
 ```
 
@@ -278,7 +277,63 @@ This function is used to decrypt the cipher text data with a key and IV that are
 6. ***Context clean up:***<br>
     The cipher context is freed and the decryption ends
 
-Every stage of the decryption process is checked for error. If an error occurs, is handled by ```handleErrors()```.<br>
+Every stage of the decryption process is checked for errors. If an error occurs, is handled by ```handleErrors()```.<br>
+The function returns the length of the plain text data, useful value for printing and writing the data to files without any problems.
+
+
+## <center>*Data Signing (CMAC)*</center>
+```c
+void gen_cmac(unsigned char *data, size_t data_len, unsigned char *key, 
+    unsigned char *cmac, int bit_mode)
+{
+    size_t cmac_len = 0;	// not used anymore
+	// Declare CMAC context
+    CMAC_CTX *ctx;
+
+    // Initialize the context 
+    if(!(ctx = CMAC_CTX_new()))
+        handleErrors();
+
+	// Bit mode 128 or 256
+    const EVP_CIPHER *cipher;
+	if(bit_mode == 128) 
+		cipher = EVP_aes_128_ecb();
+	else
+		cipher = EVP_aes_256_ecb();
+
+	// Intialize the CMAC generation
+    if(CMAC_Init(ctx, key, (size_t)bit_mode/8, cipher, NULL) != 1)
+        handleErrors();
+
+	// Add the data to the process
+    if(CMAC_Update(ctx, data, data_len) != 1)
+        handleErrors();
+
+	// Finalize the CMAC generation
+    if(CMAC_Final(ctx, cmac, &cmac_len) != 1)
+        handleErrors();
+
+	// Free the context
+    CMAC_CTX_free(ctx);
+
+    // return cmac_len;
+}
+```
+This function is used to sign the data to be encrypted by generating a 16-byte CMAC. There are multiple stages for the signing process:
+1. ***Context initialization:***<br>
+    A new cmac contex object is created 
+2. ***Cipher mode:***<br>
+    Depending on the caller input, AES_ECB mode with 128 or 256 bit key length is selected
+3. ***Signing process initialization:***
+    The signing starts with the cipher context, key, key length, cipher mode and implementation as an input. Implementation is set to "NULL".
+4. ***Signing process update:***
+    The signing is updated with the plain text information required for the CMAC generation. Again the cipher context is necessary as input
+5. ***Signing process finalization:***
+    The decryption is finalized, the length of CMAC is stored (in bytes), which equals the cipher block size. Unless cmac_len is NULL, it encrypts the last block, padding it if required and stores the CMAC data to the cmac pointer. Again the cipher context is necessary as input
+6. ***Context clean up:***<br>
+    The cipher context is freed and the decryption ends
+
+Every stage of the signing process is checked for errors. If an error occurs, is handled by ```handleErrors()```.<br>
 The function returns the length of the plain text data, useful value for printing and writing the data to files without any problems.
 
 <p>&nbsp;</p>
