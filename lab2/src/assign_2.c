@@ -142,16 +142,21 @@ check_args(char *input_file, char *output_file, unsigned char *password,
  * Generates a key using a password
  */
 void keygen(unsigned char *password, unsigned char *key, unsigned char *iv, int bit_mode)
-{
+{	
+	// No salt is used
 	const unsigned char *salt = NULL;
+	// Declare cipher
 	const EVP_CIPHER *cipher;
+	// Set the hash function to sha1
 	const EVP_MD *hash = EVP_sha1();
 
+	// Bit mode 128 or 256
 	if(bit_mode == 128) 
 		cipher = EVP_aes_128_ecb();
 	else
 		cipher = EVP_aes_256_ecb();
 
+	// Generate the key using the above
 	if (EVP_BytesToKey(cipher, hash, salt, (unsigned char *)password, strlen((char *)password), 1, key, iv) == 0)
 		handleErrors();
 
@@ -164,35 +169,41 @@ void keygen(unsigned char *password, unsigned char *key, unsigned char *iv, int 
 size_t encrypt(unsigned char *plaintext, int plaintext_len, unsigned char *key,
     unsigned char *iv, unsigned char *ciphertext, int bit_mode)
 {
+	// Declare context
 	EVP_CIPHER_CTX *ctx;
 
     int len;
-
     int ciphertext_len;
 
-    /* Create and initialise the context */
+    // Initialize the context 
     if(!(ctx = EVP_CIPHER_CTX_new())){
         handleErrors();
 	}
-
+	
+	// Bit mode 128 or 256
 	const EVP_CIPHER *cipher;
 	if(bit_mode == 128) 
 		cipher = EVP_aes_128_ecb();
 	else
 		cipher = EVP_aes_256_ecb();
 
+	// Intialize the encryption
     if(EVP_EncryptInit_ex(ctx, cipher, NULL, key, iv) != 1)
         handleErrors();
 
- 
+	// Add the data to be encrypted
     if(EVP_EncryptUpdate(ctx, ciphertext, &len, plaintext, plaintext_len) != 1)
         handleErrors();
+	// Set the cipher Text length
     ciphertext_len = len;
 
+	// Finalize the encryption, append data to the cipherText
     if(EVP_EncryptFinal_ex(ctx, ciphertext + len, &len) != 1)
         handleErrors();
+	// Update the cipher Text length
     ciphertext_len += len;
 
+	// Free the context
     EVP_CIPHER_CTX_free(ctx);
 
 	return (size_t)ciphertext_len;
@@ -205,36 +216,40 @@ size_t encrypt(unsigned char *plaintext, int plaintext_len, unsigned char *key,
 int decrypt(unsigned char *ciphertext, int ciphertext_len, unsigned char *key,
     unsigned char *iv, unsigned char *plaintext, int bit_mode)
 {
+	// Declare context
     EVP_CIPHER_CTX *ctx;
 
     int len;
-
     int plaintext_len;
 
+    // Initialize the context 
     if(!(ctx = EVP_CIPHER_CTX_new()))
         handleErrors();
 
+	// Bit mode 128 or 256
     const EVP_CIPHER *cipher;
 	if(bit_mode == 128) 
 		cipher = EVP_aes_128_ecb();
 	else
 		cipher = EVP_aes_256_ecb();
 
-
+	// Intialize the decryption
     if(EVP_DecryptInit_ex(ctx, cipher, NULL, key, iv) != 1)
         handleErrors();
 
-
+	// Add the data to be decrypted
     if(EVP_DecryptUpdate(ctx, plaintext, &len, ciphertext, ciphertext_len) != 1)
         handleErrors();
+	// Set the plain Text length
     plaintext_len = len;
 
-
+	// Finalize the decryption, append data to the plainText
     if(EVP_DecryptFinal_ex(ctx, plaintext + len, &len) != 1)
         handleErrors();
+	// Update the plain Text length
     plaintext_len += len;
-    
 
+	// Free the context
     EVP_CIPHER_CTX_free(ctx);
 
     return plaintext_len;
@@ -248,27 +263,33 @@ void gen_cmac(unsigned char *data, size_t data_len, unsigned char *key,
     unsigned char *cmac, int bit_mode)
 {
     size_t cmac_len = 0;	// not used anymore
+	// Declare CMAC context
     CMAC_CTX *ctx;
 
+    // Initialize the context 
     if(!(ctx = CMAC_CTX_new()))
         handleErrors();
 
+	// Bit mode 128 or 256
     const EVP_CIPHER *cipher;
 	if(bit_mode == 128) 
 		cipher = EVP_aes_128_ecb();
 	else
 		cipher = EVP_aes_256_ecb();
 
-
+	// Intialize the CMAC generation
     if(CMAC_Init(ctx, key, (size_t)bit_mode/8, cipher, NULL) != 1)
         handleErrors();
 
+	// Add the data to the process
     if(CMAC_Update(ctx, data, data_len) != 1)
         handleErrors();
 
+	// Finalize the CMAC generation
     if(CMAC_Final(ctx, cmac, &cmac_len) != 1)
         handleErrors();
 
+	// Free the context
     CMAC_CTX_free(ctx);
 
     // return cmac_len;
@@ -280,19 +301,19 @@ void gen_cmac(unsigned char *data, size_t data_len, unsigned char *key,
  */
 int verify_cmac(unsigned char *cmac1, unsigned char *cmac2)
 {
+	// If either is null, return
 	if(cmac1 == NULL || cmac2 == NULL)
         return 0;
-        
+    // Compare the 2 'strings'
     return(memcmp(cmac1, cmac2, BLOCK_SIZE) == 0);
 }
 
 
 
 /* TODO Develop your functions here... */
-void handleErrors(void)
-{
-    ERR_print_errors_fp(stderr);
-    abort();
+void handleErrors(void){
+	fprintf(stderr, "Error!! Exiting...\n");
+	exit(EXIT_FAILURE);
 }
 
 int readFromFile(char * filename, unsigned char * data, int * data_len){
@@ -572,6 +593,11 @@ main(int argc, char **argv)
 		// memcpy(cmac1, cipher_cmac+cipher_len, bit_mode/8);   
 		// cipherText = byteAppend(cipher_cmac+cmac_len, cipher_cmac+cmac_len, 0, cipher_len);
 		// cmac = byteAppend(cipher_cmac, cipher_cmac, 0, cmac_len);
+
+		/* Print password, key */
+		printf("Pass: %s\n", password);
+		printf("Key: ");
+		print_hex(key, sizeof(char)*bit_mode/8);
 
 		/* Print cmac from file */ 
 		printf("\tCMAC(file) with length: %d\n", (int)cmac_len);
