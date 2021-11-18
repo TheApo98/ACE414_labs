@@ -426,8 +426,9 @@ main(int argc, char **argv)
 	// Initialize variables 
 	int plain_len = 256;      // random length
 	size_t cipher_len = 0;      
+	unsigned char * iv = NULL;
+	// unsigned char * iv 			= (unsigned char *)malloc(sizeof(char)*bit_mode/8);
 	unsigned char * key			= (unsigned char *)malloc(sizeof(char)*bit_mode/8); 
-	unsigned char * iv 			= (unsigned char *)malloc(sizeof(char)*bit_mode/8);
 	unsigned char * plainText 	= (unsigned char *)malloc(sizeof(unsigned char)*plain_len);
 	unsigned char * cipherText 	= (unsigned char *)malloc(sizeof(unsigned char)*plain_len);
 	
@@ -436,13 +437,6 @@ main(int argc, char **argv)
 	case 0:						/* Encryption */	
 		// Generate key
 		keygen(password, key, iv, bit_mode);
-
-		// Print password, key and iv
-		printf("Pass: %s\n", password);
-		printf("Key: ");
-		print_hex(key, sizeof(char)*bit_mode/8);
-		printf("IV: ");
-		print_hex(iv, sizeof(char)*bit_mode/8);
 
 		// Read plain text from file
 		if(readFromFile(input_file, plainText, &plain_len) == 1){
@@ -455,6 +449,11 @@ main(int argc, char **argv)
 		cipherText 	= (unsigned char*)realloc(cipherText, sizeof(unsigned char)*cipher_len);
 		plainText 	= (unsigned char*)realloc(plainText, sizeof(unsigned char)*plain_len);
 
+		// Print password, key
+		printf("Pass: %s\n", password);
+		printf("Key: ");
+		print_hex(key, sizeof(char)*bit_mode/8);
+		
 		// Print plain and cipher Text
 		printf("\tPlain text length: %d\n", plain_len);
 		print_string(plainText, (size_t)plain_len);
@@ -473,13 +472,6 @@ main(int argc, char **argv)
 		// Generate key
 		keygen(password, key, iv, bit_mode);
 
-		// Print password, key and iv
-		printf("Pass: %s\n", password);
-		printf("Key: ");
-		print_hex(key, sizeof(char)*bit_mode/8);
-		printf("IV: ");
-		print_hex(iv, sizeof(char)*bit_mode/8);
-
 		// Read cipher from file
 		if(readFromFile(input_file, cipherText, (int*)&cipher_len) == 1){
 			fprintf(stderr, "Failed to read from file\n");
@@ -492,6 +484,11 @@ main(int argc, char **argv)
 		cipherText 	= (unsigned char*)realloc(cipherText, sizeof(unsigned char)*cipher_len);
 		plainText 	= (unsigned char*)realloc(plainText, sizeof(unsigned char)*plain_len);
 		
+		// Print password, key 
+		printf("Pass: %s\n", password);
+		printf("Key: ");
+		print_hex(key, sizeof(char)*bit_mode/8);
+
 		// Print plain and cipher Text
 		printf("\tCipher text length: %d\n", (int)cipher_len);
 		print_hex(cipherText, cipher_len);
@@ -506,7 +503,7 @@ main(int argc, char **argv)
 
 		break;
 
-	case 2:			// Sign and Encrypt
+	case 2:			/* Sign and Encrypt */
 		break;
 	case 3:			// Verify and decrypt
 		break;
