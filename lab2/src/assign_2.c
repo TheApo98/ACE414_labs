@@ -434,6 +434,7 @@ main(int argc, char **argv)
 	unsigned char * plainText 	= (unsigned char *)malloc(sizeof(unsigned char)*plain_len);
 	unsigned char * cipherText 	= (unsigned char *)malloc(sizeof(unsigned char)*plain_len);
 	unsigned char * cmac 		= (unsigned char *)malloc(sizeof(unsigned char)*plain_len);
+	unsigned char * cmac_gen	= (unsigned char *)malloc(sizeof(unsigned char)*plain_len);
 	unsigned char * cipher_cmac = (unsigned char *)malloc(sizeof(unsigned char)*plain_len);
 	
 	switch (op_mode)
@@ -554,16 +555,57 @@ main(int argc, char **argv)
 
 		break;
 	case 3:			/* Verification and decryption */
+		// Generate key
+		keygen(password, key, iv, bit_mode);
+
+		// Read cipher from file
+		int cipher_cmac_len = 0;
+		if(readFromFile(input_file, cipher_cmac, &cipher_cmac_len) == 1){
+			fprintf(stderr, "Failed to read from file\n");
+			exit(EXIT_FAILURE);
+		}
+		cmac_len = bit_mode/8;
+		cipher_len = cipher_cmac_len - cmac_len;
+
+		// Extract cipherText from concatenated "string"
+		memcpy(cipherText, cipher_cmac, cipher_len); 
+		// Extract CMAC from concatenated "string"
+		cmac = byteAppend(cipher_cmac+cipher_len, cipher_cmac+cipher_len, 0, cmac_len);
+		// memcpy(cmac1, cipher_cmac+cipher_len, bit_mode/8);   
+		// cipherText = byteAppend(cipher_cmac+cmac_len, cipher_cmac+cmac_len, 0, cipher_len);
+		// cmac = byteAppend(cipher_cmac, cipher_cmac, 0, cmac_len);
+
+		/* Print cmac from file */ 
+		printf("\tCMAC(file) with length: %d\n", (int)cmac_len);
+		print_hex(cmac, cmac_len);  
+		/* Print plain and cipher Text */
+		printf("\tCipher text length: %d\n", (int)cipher_len);
+		print_hex(cipherText, cipher_len);
+		
+		// Decrypt cipherText
+		plain_len = decrypt(cipherText, cipher_len, key, iv, plainText, bit_mode);
+
+		printf("\tPlain text length: %d\n", plain_len);
+		print_string(plainText, (size_t)plain_len);
+		
+		// Generate CMAC for verification
+		cmac_len = gen_cmac(plainText, (size_t)plain_len, key, cmac_gen, bit_mode);
+
+		/* Print cmac from generator */ 
+		printf("\tCMAC(Gen) with length: %d\n", (int)cmac_len);
+		print_hex(cmac_gen, cmac_len); 
+
+		// Check for verification
+		if(verify_cmac(cmac, cmac_gen, cmac_len) == 1)
+			printf("\tVerification successful!!!\n");
+		else
+			printf("\tVerification failed!!!\n");
+		
 		break;
 	default:
 		break;
 	}
 
-	// Free memory
-	free(key);
-	free(iv);
-	free(plainText);
-	free(cipherText);
 
 	/* Initialize the library */
 
@@ -582,6 +624,14 @@ main(int argc, char **argv)
 		
 
 	/* Clean up */
+	free(key);
+	// free(iv);
+	free(plainText);
+	free(cipherText);
+	// free(cmac);
+	free(cmac_gen);
+	free(cipher_cmac);
+
 	free(input_file);
 	free(output_file);
 	free(password);
@@ -593,8 +643,10 @@ main(int argc, char **argv)
 
 
 /*
-Commands:
+Commands (Task F):
 1) ./assign_2 -i ../files/encryptme_256.txt -o ../files/decryptme_256.txt -p TUC2017030142 -b 256 -e
 2) ./assign_2 -i ../files/hpy414_decryptme_128.txt -o ../files/hpy414_encryptme_128.txt -p hpy414 -b 128 -d
 3) ./assign_2 -i ../files/signme_128.txt -o ../files/verifyme_128.txt -p TUC2017030142 -b 128 -s
+4.1) ./assign_2 -i ../files/hpy414_verifyme_128.txt -o fakefilename -p hpy414 -b 128 -v
+4.2) ./assign_2 -i ../files/hpy414_verifyme_256.txt -o fakefilename -p hpy414 -b 256 -v
 */
