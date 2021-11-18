@@ -336,6 +336,18 @@ This function is used to sign the data to be encrypted by generating a 16-byte C
 Every stage of the signing process is checked for errors. If an error occurs, is handled by ```handleErrors()```.<br>
 The function returns the length of the plain text data, useful value for printing and writing the data to files without any problems.
 
+## <center>*Data Verification (CMAC)*</center>
+```c
+int verify_cmac(unsigned char *cmac1, unsigned char *cmac2)
+{
+	if(cmac1 == NULL || cmac2 == NULL)
+        return 0;
+        
+    return(memcmp(cmac1, cmac2, BLOCK_SIZE) == 0);
+}
+```
+This function verifies the encrypted data by comparing the CMAC that came with the cipher text and the CMAC that is generated from the decryption process (plain text)
+
 <p>&nbsp;</p>
 
 ## <center>*Main Function*</center>
