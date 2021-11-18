@@ -602,6 +602,7 @@ main(int argc, char **argv)
 			printf("\tVerification failed!!!\n");
 		
 		break;
+		
 	default:
 		break;
 	}
