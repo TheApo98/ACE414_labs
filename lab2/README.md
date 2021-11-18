@@ -353,6 +353,71 @@ This function verifies the encrypted data by comparing the CMAC that came with t
 ## <center>*Main Function*</center>
 The cases '0' and '1' are straight forward and the comments in source file are sufficient, so we won't get in to much detail
 
+<p>&nbsp;</p>
+
+## Task F.4
+Verify the files “hpy414_verifyme_256.txt” and “hpy414_verifyme_128.txt” using the appropriate key size, as the filename specifies. The keys should be derived by the password “hpy414”.<br>
+The output is stated below:
+## <center>*Verifying with 128-bits*</center>
+```bash
+# command
+./assign_2 -i ../files/hpy414_verifyme_128.txt -o fakefilename -p hpy414 -b 128 -v
+
+# output
+Pass: hpy414
+Key: 8D 3B 78 B5 73 3F 18 9D 72 1A A1 52 48 6A B7 EE 
+        CMAC(file) with length: 16
+A6 18 94 13 55 F2 6B D4 77 C0 CF AF C3 B7 CD A1 
+        Cipher text length: 80
+A7 22 4B B8 66 17 E2 A2 06 EA 33 E3 34 7E 94 1C 
+E8 16 8F B5 E9 71 50 8A 88 7B E0 B1 0D 13 3C 95 
+6C D2 A3 82 BA FA B9 2D 46 E0 31 48 76 F1 2B 0C 
+D5 C6 32 45 BF A8 44 24 D0 77 A9 BE 55 B2 59 B9 
+B1 38 90 C7 D4 18 B0 4D 39 B7 97 E8 D6 6A 46 00 
+        Plain text length: 66
+Hello HPY414
+
+This file can be verified with a 128-bit key.
+
+BB! 
+
+        CMAC(Gen) with length: 16
+66 4C 57 6F 54 4B DC 7B 8E 10 FC F2 E2 4C BD B5 
+        Verification failed!!!
+```
+
+## <center>*Verifying with 256-bits*</center>
+```bash
+# command
+./assign_2 -i ../files/hpy414_verifyme_256.txt -o fakefilename -p hpy414 -b 256 -v
+
+# output
+Pass: hpy414
+Key: 8D 3B 78 B5 73 3F 18 9D 72 1A A1 52 48 6A B7 EE 
+3B 30 43 27 DE C4 42 D0 A9 BA 93 A8 4C 67 A0 68 
+        CMAC(file) with length: 16
+D9 69 1C A9 38 DE F4 66 D2 91 EC B5 B8 D7 79 A8 
+        Cipher text length: 80
+39 21 9C 76 10 EB 0A 20 04 E7 8F C5 11 DB F8 69 
+EF 7D 57 F4 AA CC 66 46 1C 21 4F 50 96 5C 36 6E 
+A7 9E 3E 10 6C 63 FB E9 5A 29 D6 5C 79 E9 45 37 
+02 FE A8 0C 4A 0A CA 35 D3 0D 3E F7 DA 59 13 EF 
+68 EE 61 91 EF 5C FD 5E C9 1D B4 37 07 ED 6C 07 
+        Plain text length: 64
+Hello HPY414
+
+This file can be verified with a 256-bit key
+
+BB!
+
+        CMAC(Gen) with length: 16
+DC 35 11 2E 76 B5 64 29 25 99 E4 ED 20 B4 9E 2B 
+        Verification failed!!!
+```
+It is clear that the CMACs don't match so the verification process failed in both cases
+
+<p>&nbsp;</p>
+
 
 ## License
 <p style="color:red;">Apostolos Gioumertakis</p>
