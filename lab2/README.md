@@ -146,7 +146,7 @@ void keygen(unsigned char *password, unsigned char *key, unsigned char *iv, int 
 ```
 This function is used to generate a key and an Initialization Vector(IV), using the AES_ECB from the EVP API. In our case, the IV is not needed.<br> 
 By default, for generating a key and IV with input data with the ```EVP_BytesToKey()``` function, some things are required:
-1. ***Cipher:*** AES_ECB with 128 or 256 bit key length 
+1. ***Cipher:*** AES_ECB mode with 128 or 256 bit key length 
 2. ***Hashing algorithm:*** SHA1 in our case
 3. ***Salt:*** a plain text to be added to the hash function with the data (Optional in our case)
 4. ***Password:*** the data to be hashed, specified by the user
@@ -157,6 +157,67 @@ By default, for generating a key and IV with input data with the ```EVP_BytesToK
 The function returns an error through ```handleErrors()``` function if there is a problem with the key generation. 
 
 ## <center>*Data Encryption*</center>
+```c
+size_t encrypt(unsigned char *plaintext, int plaintext_len, unsigned char *key,
+    unsigned char *iv, unsigned char *ciphertext, int bit_mode)
+{
+	// Declare context
+	EVP_CIPHER_CTX *ctx;
+
+    int len;
+    int ciphertext_len;
+
+    // Initialize the context 
+    if(!(ctx = EVP_CIPHER_CTX_new())){
+        handleErrors();
+	}
+	
+	// Bit mode 128 or 256
+	const EVP_CIPHER *cipher;
+	if(bit_mode == 128) 
+		cipher = EVP_aes_128_ecb();
+	else
+		cipher = EVP_aes_256_ecb();
+
+	// Intialize the encryption
+    if(EVP_EncryptInit_ex(ctx, cipher, NULL, key, iv) != 1)
+        handleErrors();
+
+	// Add the data to be encrypted
+    if(EVP_EncryptUpdate(ctx, ciphertext, &len, plaintext, plaintext_len) != 1)
+        handleErrors();
+	// Set the cipher Text length
+    ciphertext_len = len;
+
+	// Finalize the encryption, append data to the cipherText
+    if(EVP_EncryptFinal_ex(ctx, ciphertext + len, &len) != 1)
+        handleErrors();
+	// Update the cipher Text length
+    ciphertext_len += len;
+
+	// Free the context
+    EVP_CIPHER_CTX_free(ctx);
+
+	return (size_t)ciphertext_len;
+}
+```
+This function is used to encrypt the plain text data with a key and IV that are given as an input. There are multiple stages for the encryption process:
+1. ***Context initialization:***<br>
+    A new cipher contex object is created 
+2. ***Cipher mode:***<br>
+    Depending on the caller input, AES_ECB mode with 128 or 256 bit key length is selected
+3. ***Encryption process initialization:***
+    The encryption starts with the cipher contex, cipher mode, implementation, key and IV as an input. Implementation is set to "NULL".
+4. ***Encryption process update:***
+    The encryption is updated with the plain text information and the cipherText pointer for storing the encrypted data. Again the cipher context is necessary as input
+5. ***Encryption process finalization:***
+    The encryption is finalized and more encrypted data are appended to the previously created cipher text. The length of the new data is returned (call by reference). Again the cipher context is necessary as input
+6. ***Context clean up:***<br>
+    The cipher context is freed and the encryption ends
+
+Every stage of the encryption process is checked for error. If an error occurs, is handled by ```handleErrors()```.<br>
+The function returns the length of the ciphered data, useful value for printing and writing the data to files without any problems.
+
 
 
 <p>&nbsp;</p>
