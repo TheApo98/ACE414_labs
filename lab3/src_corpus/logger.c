@@ -54,7 +54,8 @@ fopen(const char *path, const char *mode)
 	struct tm* tm_ptr;
     time_t t;
 	// Epoch time (in seconds) of last access
-    t = stats.st_atim.tv_sec;
+    // t = stats.st_atim.tv_sec;
+	t = time(NULL);
 	// Convert it to local time and fill the struct
     tm_ptr = localtime(&t);
 	// Convert using struct to human readable string
@@ -144,7 +145,8 @@ fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
 	struct tm* tm_ptr;
     time_t t;
 	// Epoch time (in seconds) of last access
-    t = stats.st_atim.tv_sec;
+    // t = stats.st_atim.tv_sec;
+	t = time(NULL);
 	// Convert it to local time and fill the struct
     tm_ptr = localtime(&t);
 	// Convert using struct to human readable string
