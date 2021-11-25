@@ -153,7 +153,8 @@ fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
     char * time = malloc(sizeof(char)*50);
     formatDateTime(tm_ptr, date, time);
 
-	int access_type = access(filename, F_OK) + 1;
+	// Access type for writing
+	int access_type = 2;
 
 	// If action is NOT denied --> '0' else '1'
 	int action_denied_flag = 0;
