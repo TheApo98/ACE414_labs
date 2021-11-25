@@ -111,7 +111,79 @@ fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
 	original_fwrite_ret = (*original_fwrite)(ptr, size, nmemb, stream);
 
 
+	// If fopen fails, just return?
+	if(original_fwrite_ret == NULL)
+		return original_fwrite_ret;
 
+	uid_t user_id = getuid();
+
+	// Get filename from file pointer
+    int MAXSIZE = 0xFFF;
+    char proclnk[0xFFF];
+    int filedes = fileno(stream);
+    char filename[0xFFF];
+	sprintf(proclnk, "/proc/self/fd/%d", filedes);
+	int r = readlink(proclnk, filename, MAXSIZE);
+	if (r < 0)
+	{
+		printf("failed to readlink\n");
+		exit(1);
+	}
+	filename[r] = '\0';
+    // printf("File Name: %s\n", filename);
+
+	// Get file stats
+	struct stat stats;
+    int filedes = fileno(original_fwrite_ret);
+    if(fstat(filedes, &stats) == -1){
+        fprintf(stderr, "Stat() failed: \n%s!\n", strerror(errno));
+        exit(EXIT_FAILURE);
+    }
+	
+	// Date and time
+	struct tm* tm_ptr;
+    time_t t;
+	// Epoch time (in seconds) of last access
+    t = stats.st_atim.tv_sec;
+	// Convert it to local time and fill the struct
+    tm_ptr = localtime(&t);
+	// Convert using struct to human readable string
+    // char * dateTime = asctime(tm_ptr);
+	char * date = malloc(sizeof(char)*50);
+    char * time = malloc(sizeof(char)*50);
+    formatDateTime(tm_ptr, date, time);
+
+	int access_type = access(filename, F_OK) + 1;
+
+	// If action is NOT denied --> '0' else '1'
+	int action_denied_flag = 0;
+	if(stats.st_uid != user_id)
+		action_denied_flag = 1;
+
+	// The MD5 hash from the file
+    unsigned char* md5_hash = (unsigned char*)malloc(MD5_DIGEST_LENGTH);
+    unsigned char* data = (unsigned char*)malloc(sizeof(char)*256);
+	size_t data_len = 0;
+	if(readFromFile(filename, data, (int*)&data_len) == 1){
+        fprintf(stderr, "Error reading from file, errno: \n%s!\n", strerror(errno));
+        exit(EXIT_FAILURE);
+    }
+
+	// Calculate the MD5 hash
+    MD5(data, data_len, md5_hash);
+
+	// Write log to file
+	if(writeLogsToFile(user_id, filename, date, time, access_type, action_denied_flag, md5_hash) == -1){
+		fprintf(stderr, "Error!!! %s.\n", strerror(errno));
+        exit(EXIT_FAILURE);
+	}
+	else
+		printf("Write successful\n");
+
+	free(date);
+	free(time);
+	free(data);
+	free(md5_hash);
 
 
 	return original_fwrite_ret;
