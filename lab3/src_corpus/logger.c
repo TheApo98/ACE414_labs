@@ -240,15 +240,12 @@ int writeLogsToFile(struct entry logs){
 	wr_err = fprintf(fp1, "%d|", logs.action_denied);
 	wr_err = fwrite(logs.fingerprint , sizeof(unsigned char) , MD5_DIGEST_LENGTH , fp1 );
 	wr_err = fprintf(fp1, "|\n");
+	free(date);
+	free(time);
+	fclose(fp1);
 	if (wr_err < 0){ 
-        free(date);
-        free(time);
-        fclose(fp1);
 		return -1;
     }
-    free(date);
-    free(time);
-	fclose(fp1);
 	return 0;
 }
 
