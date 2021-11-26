@@ -67,7 +67,7 @@ fopen(const char *path, const char *mode)
 	// Create entry struct
     struct entry logs;
 
-	logs.file = path;
+	logs.file = (char *)path;
     logs.time = time(NULL);
 
     // printf("After Time\n");
@@ -95,7 +95,7 @@ fopen(const char *path, const char *mode)
     // print_string(data, data_len);
 
     MD5(data, data_len, md5_hash);
-    logs.fingerprint = md5_hash;
+    logs.fingerprint = (char *)md5_hash;
     // printf("After MD5\n");
 
     if(writeLogsToFile(logs) == -1){
@@ -125,12 +125,12 @@ fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
 
 
 	// If fopen fails, just return?
-	if(original_fwrite_ret == NULL)
+	if(original_fwrite_ret == (int)nmemb)
 		return original_fwrite_ret;
 
 	// Get file stats
 	struct stat stats;
-    int filedes = fileno(original_fwrite_ret);
+    int filedes = fileno(stream);
     if(fstat(filedes, &stats) == -1){
         fprintf(stderr, "Stat() failed: \n%s!\n", strerror(errno));
         exit(EXIT_FAILURE);
@@ -167,7 +167,7 @@ fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
     // print_string(data, data_len);
 
     MD5(data, data_len, md5_hash);
-    logs.fingerprint = md5_hash;
+    logs.fingerprint = (char *)md5_hash;
     // printf("After MD5\n");
 
     if(writeLogsToFile(logs) == -1){
@@ -215,6 +215,7 @@ struct tm * getDateTime(time_t t){
     tm_ptr = localtime(&t);
 	// Convert using struct to human readable string
     // char * dateTime = asctime(tm_ptr);
+    return tm_ptr;
 }
 
 void formatDateTime(struct tm* tm_ptr, char * date, char * time){
