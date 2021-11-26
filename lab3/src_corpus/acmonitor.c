@@ -22,6 +22,55 @@ struct entry {
 
 };
 
+// Useful functions from Assignment 2
+int readFromFile(char * filename, unsigned char * data, int * data_len){
+    FILE *fp;
+   	fp = fopen(filename, "rb");
+    if(fp == NULL){
+        return 1;
+    }
+    /* File commands */ 
+    /* (necessary for reading special characters like EOF, etc) */
+    fseek(fp, 0, SEEK_END);     // go to file end
+    *data_len = ftell(fp);           // calculate the file size
+    rewind(fp);                 // go to file start and...
+    if(fread(data, *data_len, sizeof(unsigned char), fp) == 0){
+        fclose(fp);
+        return 1;
+    }
+    fclose(fp);
+    return 0;
+}
+
+void print_hex(unsigned char *data, size_t len)
+{
+	size_t i;
+
+	if (!data)
+		printf("NULL data\n");
+	else {
+		for (i = 0; i < len; i++) {
+			if (!(i % 16) && (i != 0))
+				printf("\n");
+			printf("%02X ", data[i]);
+		}
+		printf("\n");
+	}
+}
+
+void print_string(unsigned char *data, size_t len)
+{
+	size_t i;
+
+	if (!data)
+		printf("NULL data\n");
+	else {
+		for (i = 0; i < len; i++)
+			printf("%c", data[i]);
+		printf("\n");
+	}
+}
+
 
 void
 usage(void)
