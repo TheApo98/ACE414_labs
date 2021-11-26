@@ -13,14 +13,30 @@
 #include <errno.h>
 #include <string.h>
 
+struct entry {
+
+	int uid; /* user id (positive integer) */
+	char *file; /* filename (string) */
+
+	// time_t date; /* file access date */
+	time_t time; /* file access time */
+
+	int access_type; /* access type values [0-2] */
+	int action_denied; /* is action denied values [0-1] */
+
+	char *fingerprint; /* file fingerprint */
+
+};
+
 // Declare functions here
 void print_hex(unsigned char *data, size_t len);
 void print_string(unsigned char *data, size_t len);
 int readFromFile(char * filename, unsigned char * data, int * data_len);
 int writeToFile(char * filename, unsigned char * data, int data_len);
 void formatDateTime(struct tm* tm_ptr, char * date, char * time);
-int writeLogsToFile(int user_id, char* filename, char* date, char* time, 
-	int access_type, int action_denied_flag, unsigned char* md5_hash);
+int writeLogsToFile(struct entry logs);
+char * getFilename(FILE *fp);
+struct tm * getDateTime(time_t t);
 
 
 
@@ -39,8 +55,6 @@ fopen(const char *path, const char *mode)
 	if(original_fopen_ret == NULL)
 		return original_fopen_ret;
 
-	uid_t user_id = getuid();
-	char * filename = path;
 
 	// Get file stats
 	struct stat stats;
@@ -50,49 +64,47 @@ fopen(const char *path, const char *mode)
         exit(EXIT_FAILURE);
     }
 	
-	// Date and time
-	struct tm* tm_ptr;
-    time_t t;
-	// Epoch time (in seconds) of last access
-    // t = stats.st_atim.tv_sec;
-	t = time(NULL);
-	// Convert it to local time and fill the struct
-    tm_ptr = localtime(&t);
-	// Convert using struct to human readable string
-    // char * dateTime = asctime(tm_ptr);
-	char * date = malloc(sizeof(char)*50);
-    char * time = malloc(sizeof(char)*50);
-    formatDateTime(tm_ptr, date, time);
+	// Create entry struct
+    struct entry logs;
 
-	int access_type = access(path, F_OK) + 1;
+	logs.file = path;
+    logs.time = time(NULL);
 
-	// If action is NOT denied --> '0' else '1'
-	int action_denied_flag = 0;
-	if(stats.st_uid != user_id)
-		action_denied_flag = 1;
+    // printf("After Time\n");
+
+	logs.uid = getuid();
+	logs.access_type = access(logs.file, F_OK) + 1;
+
+	// Compare current uid and file uid
+	if(stats.st_uid != logs.uid)
+		logs.action_denied = 1;
+    else
+        logs.action_denied = 0;
+    // printf("After action_denied_flag\n");
+    
 
 	// The MD5 hash from the file
     unsigned char* md5_hash = (unsigned char*)malloc(MD5_DIGEST_LENGTH);
     unsigned char* data = (unsigned char*)malloc(sizeof(char)*256);
 	size_t data_len = 0;
-	if(readFromFile(filename, data, (int*)&data_len) == 1){
+	if(readFromFile(logs.file, data, (int*)&data_len) == 1){
         fprintf(stderr, "Error reading from file, errno: \n%s!\n", strerror(errno));
         exit(EXIT_FAILURE);
     }
+    // printf("After readFromFile\n");
+    // print_string(data, data_len);
 
-	// Calculate the MD5 hash
     MD5(data, data_len, md5_hash);
+    logs.fingerprint = md5_hash;
+    // printf("After MD5\n");
 
-	// Write log to file
-	if(writeLogsToFile(user_id, filename, date, time, access_type, action_denied_flag, md5_hash) == -1){
+    if(writeLogsToFile(logs) == -1){
 		fprintf(stderr, "Error!!! %s.\n", strerror(errno));
         exit(EXIT_FAILURE);
 	}
 	else
 		printf("Write successful\n");
 
-	free(date);
-	free(time);
 	free(data);
 	free(md5_hash);
 
@@ -116,23 +128,6 @@ fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
 	if(original_fwrite_ret == NULL)
 		return original_fwrite_ret;
 
-	uid_t user_id = getuid();
-
-	// Get filename from file pointer
-    int MAXSIZE = 0xFFF;
-    char proclnk[0xFFF];
-    int filedes = fileno(stream);
-    char filename[0xFFF];
-	sprintf(proclnk, "/proc/self/fd/%d", filedes);
-	int r = readlink(proclnk, filename, MAXSIZE);
-	if (r < 0)
-	{
-		printf("failed to readlink\n");
-		exit(1);
-	}
-	filename[r] = '\0';
-    // printf("File Name: %s\n", filename);
-
 	// Get file stats
 	struct stat stats;
     int filedes = fileno(original_fwrite_ret);
@@ -141,50 +136,47 @@ fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
         exit(EXIT_FAILURE);
     }
 	
-	// Date and time
-	struct tm* tm_ptr;
-    time_t t;
-	// Epoch time (in seconds) of last access
-    // t = stats.st_atim.tv_sec;
-	t = time(NULL);
-	// Convert it to local time and fill the struct
-    tm_ptr = localtime(&t);
-	// Convert using struct to human readable string
-    // char * dateTime = asctime(tm_ptr);
-	char * date = malloc(sizeof(char)*50);
-    char * time = malloc(sizeof(char)*50);
-    formatDateTime(tm_ptr, date, time);
+	// Create entry struct
+    struct entry logs;
 
-	// Access type for writing
-	int access_type = 2;
+	logs.file = getFilename(stream);
+    logs.time = time(NULL);
 
-	// If action is NOT denied --> '0' else '1'
-	int action_denied_flag = 0;
-	if(stats.st_uid != user_id)
-		action_denied_flag = 1;
+    // printf("After Time\n");
+
+	logs.uid = getuid();
+	logs.access_type = 2;
+
+	// Compare current uid and file uid
+	if(stats.st_uid != logs.uid)
+		logs.action_denied = 1;
+    else
+        logs.action_denied = 0;
+    // printf("After action_denied_flag\n");
+    
 
 	// The MD5 hash from the file
     unsigned char* md5_hash = (unsigned char*)malloc(MD5_DIGEST_LENGTH);
     unsigned char* data = (unsigned char*)malloc(sizeof(char)*256);
 	size_t data_len = 0;
-	if(readFromFile(filename, data, (int*)&data_len) == 1){
+	if(readFromFile(logs.file, data, (int*)&data_len) == 1){
         fprintf(stderr, "Error reading from file, errno: \n%s!\n", strerror(errno));
         exit(EXIT_FAILURE);
     }
+    // printf("After readFromFile\n");
+    // print_string(data, data_len);
 
-	// Calculate the MD5 hash
     MD5(data, data_len, md5_hash);
+    logs.fingerprint = md5_hash;
+    // printf("After MD5\n");
 
-	// Write log to file
-	if(writeLogsToFile(user_id, filename, date, time, access_type, action_denied_flag, md5_hash) == -1){
+    if(writeLogsToFile(logs) == -1){
 		fprintf(stderr, "Error!!! %s.\n", strerror(errno));
         exit(EXIT_FAILURE);
 	}
 	else
 		printf("Write successful\n");
 
-	free(date);
-	free(time);
 	free(data);
 	free(md5_hash);
 
@@ -192,9 +184,72 @@ fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
 	return original_fwrite_ret;
 }
 
+
+/* My custom functions */
+
+char * getFilename(FILE *fp){
+    int filedes = fileno(fp);
+    int MAXSIZE = 0xFFF;
+    char * proclnk = (char *)malloc(sizeof(char)*MAXSIZE);
+    char * filename = (char *)malloc(sizeof(char)*MAXSIZE);
+    sprintf(proclnk, "/proc/self/fd/%d", filedes);
+    int r = readlink(proclnk, filename, MAXSIZE);
+    if (r < 0)
+    {
+        printf("Failed to readlink\n");
+        free(proclnk);
+        free(filename);
+        exit(1);
+    }
+    filename[r] = '\0';
+    free(proclnk);
+    // free(filename);
+    // printf("File Name: %s\n", filename);
+    return filename;
+}
+
+// Date and time
+struct tm * getDateTime(time_t t){
+	struct tm* tm_ptr;
+	// Convert it to local time and fill the struct
+    tm_ptr = localtime(&t);
+	// Convert using struct to human readable string
+    // char * dateTime = asctime(tm_ptr);
+}
+
 void formatDateTime(struct tm* tm_ptr, char * date, char * time){
-    sprintf(date, "%d/%d/%d", tm_ptr->tm_mday, tm_ptr->tm_mon, tm_ptr->tm_year+1900);
+    sprintf(date, "%d-%d-%d", tm_ptr->tm_mday, tm_ptr->tm_mon, tm_ptr->tm_year+1900);
     sprintf(time, "%d:%d:%d", tm_ptr->tm_hour, tm_ptr->tm_min, tm_ptr->tm_sec);
+}
+
+int writeLogsToFile(struct entry logs){
+	FILE *fp1 = fopen("file_logging.log", "a");
+	if(fp1 == NULL)
+		return -1;
+    
+    char * date = malloc(sizeof(char)*15);
+    char * time = malloc(sizeof(char)*15);
+    formatDateTime(getDateTime(logs.time), date, time);
+
+	int wr_err = 0;
+	wr_err = fprintf(fp1, "%d|", logs.uid);
+	wr_err = fprintf(fp1, "%s|", logs.file);
+	wr_err = fprintf(fp1, "%s|", date);
+	wr_err = fprintf(fp1, "%s|", time);
+	wr_err = fprintf(fp1, "%d|", logs.access_type);
+	wr_err = fprintf(fp1, "%d|", logs.action_denied);
+	wr_err = fwrite(logs.fingerprint , sizeof(unsigned char) , MD5_DIGEST_LENGTH , fp1 );
+	wr_err = fprintf(fp1, "|\n");
+	if (wr_err < 0){ 
+        free(date);
+        free(time);
+        fclose(fp1);
+		return -1;
+    }
+    free(date);
+    free(time);
+	fclose(fp1);
+	return 0;
 }
 
 // Useful functions from Assignment 2
@@ -215,27 +270,6 @@ int readFromFile(char * filename, unsigned char * data, int * data_len){
     }
     fclose(fp);
     return 0;
-}
-
-int writeLogsToFile(int user_id, char* filename, char* date, char* time, int access_type, int action_denied_flag, unsigned char* md5_hash){
-	FILE *fp1 = fopen("file_logging.log", "a");
-	if(fp1 == NULL)
-		return -1;
-
-	int wr_err = 0;
-	wr_err = fprintf(fp1, "UID: %d\n", user_id);
-	wr_err = fprintf(fp1, "File name: %s\n", filename);
-	wr_err = fprintf(fp1, "Date: %s\n", date);
-	wr_err = fprintf(fp1, "Timestamp: %s\n", time);
-	wr_err = fprintf(fp1, "Access Type: %d\n", access_type);
-	wr_err = fprintf(fp1, "Action denied flag: %d\n", action_denied_flag);
-	wr_err = fprintf(fp1, "Fingerprint(MD5): ");
-	wr_err = fwrite(md5_hash , sizeof(unsigned char) , MD5_DIGEST_LENGTH , fp1 );
-	wr_err = fprintf(fp1, "\n\n");
-	if (wr_err < 0) 
-		return -1;
-	fclose(fp1);
-	return 0;
 }
 
 int writeToFile(char * filename, unsigned char * data, int data_len){
