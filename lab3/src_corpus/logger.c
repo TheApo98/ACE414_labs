@@ -68,6 +68,7 @@ fopen(const char *path, const char *mode)
     struct entry logs;
 
 	logs.file = (char *)path;
+	logs.file = getFilename(original_fopen_ret);
     logs.time = time(NULL);
 
     // printf("After Time\n");
@@ -87,6 +88,8 @@ fopen(const char *path, const char *mode)
     unsigned char* md5_hash = (unsigned char*)malloc(MD5_DIGEST_LENGTH);
     unsigned char* data = (unsigned char*)malloc(sizeof(char)*256);
 	size_t data_len = 0;
+	printf("Before readFromFile in fopen\n");
+	printf("File: %s\n", logs.file);
 	if(readFromFile(logs.file, data, (int*)&data_len) == 1){
         fprintf(stderr, "Error reading from file, errno: \n%s!\n", strerror(errno));
         exit(EXIT_FAILURE);
@@ -159,6 +162,7 @@ fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
     unsigned char* md5_hash = (unsigned char*)malloc(MD5_DIGEST_LENGTH);
     unsigned char* data = (unsigned char*)malloc(sizeof(char)*256);
 	size_t data_len = 0;
+	printf("Before readFromFile in fwrite\n");
 	if(readFromFile(logs.file, data, (int*)&data_len) == 1){
         fprintf(stderr, "Error reading from file, errno: \n%s!\n", strerror(errno));
         exit(EXIT_FAILURE);
@@ -219,31 +223,38 @@ struct tm * getDateTime(time_t t){
 }
 
 void formatDateTime(struct tm* tm_ptr, char * date, char * time){
-    sprintf(date, "%d-%d-%d", tm_ptr->tm_mday, tm_ptr->tm_mon, tm_ptr->tm_year+1900);
-    sprintf(time, "%d:%d:%d", tm_ptr->tm_hour, tm_ptr->tm_min, tm_ptr->tm_sec);
+    sprintf(date, "%02d-%02d-%d", tm_ptr->tm_mday, tm_ptr->tm_mon, tm_ptr->tm_year+1900);
+    sprintf(time, "%02d:%02d:%02d", tm_ptr->tm_hour, tm_ptr->tm_min, tm_ptr->tm_sec);
 }
 
 int writeLogsToFile(struct entry logs){
-	FILE *fp1 = fopen("file_logging.log", "a");
-	if(fp1 == NULL)
-		return -1;
+	FILE *original_fopen_ret;
+	FILE *(*original_fopen)(const char*, const char*);
+
+	/* call the original fopen function */
+	original_fopen = dlsym(RTLD_NEXT, "fopen");
+	original_fopen_ret = (*original_fopen)("file_logging.log", "a");
+
+    if(original_fopen_ret == NULL){
+        return 1;
+    }
     
     char * date = malloc(sizeof(char)*15);
     char * time = malloc(sizeof(char)*15);
     formatDateTime(getDateTime(logs.time), date, time);
 
 	int wr_err = 0;
-	wr_err = fprintf(fp1, "%d|", logs.uid);
-	wr_err = fprintf(fp1, "%s|", logs.file);
-	wr_err = fprintf(fp1, "%s|", date);
-	wr_err = fprintf(fp1, "%s|", time);
-	wr_err = fprintf(fp1, "%d|", logs.access_type);
-	wr_err = fprintf(fp1, "%d|", logs.action_denied);
-	wr_err = fwrite(logs.fingerprint , sizeof(unsigned char) , MD5_DIGEST_LENGTH , fp1 );
-	wr_err = fprintf(fp1, "|\n");
+	wr_err = fprintf(original_fopen_ret, "%d|", logs.uid);
+	wr_err = fprintf(original_fopen_ret, "%s|", logs.file);
+	wr_err = fprintf(original_fopen_ret, "%s|", date);
+	wr_err = fprintf(original_fopen_ret, "%s|", time);
+	wr_err = fprintf(original_fopen_ret, "%d|", logs.access_type);
+	wr_err = fprintf(original_fopen_ret, "%d|", logs.action_denied);
+	wr_err = fwrite(logs.fingerprint , sizeof(unsigned char) , MD5_DIGEST_LENGTH , original_fopen_ret );
+	wr_err = fprintf(original_fopen_ret, "|\n");
 	free(date);
 	free(time);
-	fclose(fp1);
+	fclose(original_fopen_ret);
 	if (wr_err < 0){ 
 		return -1;
     }
@@ -252,36 +263,57 @@ int writeLogsToFile(struct entry logs){
 
 // Useful functions from Assignment 2
 int readFromFile(char * filename, unsigned char * data, int * data_len){
-    FILE *fp;
-   	fp = fopen(filename, "rb");
-    if(fp == NULL){
+    // FILE *fp;
+   	// fp = fopen(filename, "rb");
+    
+	FILE *original_fopen_ret;
+	FILE *(*original_fopen)(const char*, const char*);
+
+	/* call the original fopen function */
+	original_fopen = dlsym(RTLD_NEXT, "fopen");
+	original_fopen_ret = (*original_fopen)(filename, "rb");
+	
+	if(original_fopen_ret == NULL){
+		printf("After original_fopen_ret == NULL\n");
         return 1;
     }
     /* File commands */ 
     /* (necessary for reading special characters like EOF, etc) */
-    fseek(fp, 0, SEEK_END);     // go to file end
-    *data_len = ftell(fp);           // calculate the file size
-    rewind(fp);                 // go to file start and...
-    if(fread(data, *data_len, sizeof(unsigned char), fp) == 0){
-        fclose(fp);
+    fseek(original_fopen_ret, 0, SEEK_END);     // go to file end
+    *data_len = ftell(original_fopen_ret);           // calculate the file size
+    rewind(original_fopen_ret);                 // go to file start and...
+    if(fread(data, *data_len, sizeof(unsigned char), original_fopen_ret) == 0){
+        fclose(original_fopen_ret);
+		printf("Data: %s\n", data);
         return 1;
     }
-    fclose(fp);
+    fclose(original_fopen_ret);
     return 0;
 }
 
 int writeToFile(char * filename, unsigned char * data, int data_len){
-    FILE *fp;
-   	fp = fopen(filename, "wb");
-    if(fp == NULL){
+    FILE *original_fopen_ret;
+	FILE *(*original_fopen)(const char*, const char*);
+
+	/* call the original fopen function */
+	original_fopen = dlsym(RTLD_NEXT, "fopen");
+	original_fopen_ret = (*original_fopen)(filename, "wb");
+
+    if(original_fopen_ret == NULL){
         return 1;
     }
 
-    if(fwrite(data , sizeof(unsigned char) , data_len , fp ) == 0){
-		fclose(fp);
+	// size_t original_fwrite_ret;
+	size_t (*original_fwrite)(const void*, size_t, size_t, FILE*);
+
+	/* call the original fwrite function */
+	original_fwrite = dlsym(RTLD_NEXT, "fwrite");
+
+    if((*original_fwrite)(data , sizeof(unsigned char) , data_len , original_fopen_ret ) == 0){
+		fclose(original_fopen_ret);
         return 1;
 	}
-    fclose(fp);
+    fclose(original_fopen_ret);
     return 0;
 }
 
