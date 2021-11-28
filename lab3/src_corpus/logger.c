@@ -84,14 +84,6 @@ fopen(const char *path, const char *mode)
 		return original_fopen_ret;
 	}
 
-
-	// Get file stats
-	struct stat stats;
-    int filedes = fileno(original_fopen_ret);
-    if(fstat(filedes, &stats) == -1){
-        fprintf(stderr, "Stat() failed: \n%s!\n", strerror(errno));
-        exit(EXIT_FAILURE);
-    }
 	
 	// Create entry struct
     struct entry logs;
@@ -160,14 +152,6 @@ fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
 	// If fopen fails, just return?
 	// if(original_fwrite_ret == (int)nmemb)
 	// 	return original_fwrite_ret;
-
-	// Get file stats
-	struct stat stats;
-    int filedes = fileno(stream);
-    if(fstat(filedes, &stats) == -1){
-        fprintf(stderr, "Stat() failed: \n%s!\n", strerror(errno));
-        exit(EXIT_FAILURE);
-    }
 	
 	// Create entry struct
     struct entry logs;
