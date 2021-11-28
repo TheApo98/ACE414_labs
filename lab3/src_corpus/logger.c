@@ -17,6 +17,8 @@
 #define FILE_OPEN 	1
 #define FILE_WRITE 	1
 
+const char log_file[] = "file_logging.log";
+
 struct entry {
 
 	int uid; /* user id (positive integer) */
@@ -269,7 +271,7 @@ int writeLogsToFile(struct entry logs){
 
 	/* call the original fopen function */
 	original_fopen = dlsym(RTLD_NEXT, "fopen");
-	original_fopen_ret = (*original_fopen)("file_logging.log", "a");
+	original_fopen_ret = (*original_fopen)(log_file, "a");
 
     if(original_fopen_ret == NULL){
         return 1;
