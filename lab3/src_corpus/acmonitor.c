@@ -224,13 +224,13 @@ list_unauthorized_accesses(FILE *log)
         }
 		// User accessed more than 7 files without auth
         if(items_len >= 7){
-            printf("Malicious UID: %d\n", uids[k]);
+            printf("Malicious UID: %d\t", uids[k]);
             // Print all files for each uid (for debugging)
-            printf("Diff files: %d\n", items_len);
-            for (i = 0; i < items_len; i++)
-            {
-                printf("File%d: %s\n", i, *(items+i));
-            }
+            printf("Accessed Files: %d\n", items_len);
+            // for (i = 0; i < items_len; i++)
+            // {
+            //     printf("File%d: %s\n", i, *(items+i));
+            // }
 			malicious |= 1;
         }
 
@@ -389,7 +389,7 @@ list_file_modifications(FILE *log, char *file_to_scan)
         printf("File: %s\n", file_to_scan);
         
         printf("UID: %d", uids[k]);
-        printf("\tTimes modified: %d\n", hashes_len);
+        printf("\tTimes modified: %d\n", hashes_len-1);
         
         // Print all hashes for each uid (for debugging)
         for (size_t a = 0; a < hashes_len; a++)
