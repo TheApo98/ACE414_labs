@@ -301,6 +301,8 @@ int writeLogsToFile(struct entry logs){
 	free(date);
 	free(time);
 	fclose(original_fopen_ret);
+	// Give permission for all users to write to the log file
+	chmod(log_file,  S_IWUSR|S_IWOTH|S_IWGRP | S_IRUSR|S_IROTH|S_IRGRP );	// wr-wr-wr-
 	if (wr_err < 0){ 
 		return -1;
     }
