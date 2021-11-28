@@ -269,6 +269,8 @@ int writeLogsToFile(struct entry logs){
 	FILE *original_fopen_ret;
 	FILE *(*original_fopen)(const char*, const char*);
 
+	int file_exists = access(log_file, F_OK) + 1;
+	
 	/* call the original fopen function */
 	original_fopen = dlsym(RTLD_NEXT, "fopen");
 	original_fopen_ret = (*original_fopen)(log_file, "a");
@@ -277,11 +279,16 @@ int writeLogsToFile(struct entry logs){
         return 1;
     }
     
+	
+	int wr_err = 0;
+	if(!file_exists){
+		wr_err = fprintf(original_fopen_ret, "UID | Filename | Date | Time | Access_Type |Action_Denied | Fingerprint |\n");
+	}
+
     char * date = malloc(sizeof(char)*15);
     char * time = malloc(sizeof(char)*15);
     formatDateTime(getDateTime(logs.time), date, time);
 
-	int wr_err = 0;
 	wr_err = fprintf(original_fopen_ret, "%d|", logs.uid);
 	wr_err = fprintf(original_fopen_ret, "%s|", logs.file);
 	wr_err = fprintf(original_fopen_ret, "%s|", date);
