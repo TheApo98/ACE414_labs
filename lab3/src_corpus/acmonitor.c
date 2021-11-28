@@ -343,9 +343,8 @@ list_file_modifications(FILE *log, char *file_to_scan)
     // }
     
 
-    // Create an array for unique files (lets call it 'list')
-    char ** hashes = (char**)malloc(sizeof(char*) * logs_len);
-    
+    char * prev_hash;
+
     // The size of that array
     int hashes_len = 0;
 
@@ -353,60 +352,37 @@ list_file_modifications(FILE *log, char *file_to_scan)
     int exists = 0;
 
     for(int k=0; k<uids_len; k++){
-
+		for (i = 0; i < logs_len; i++) {
+			if(logs[i].uid == uids[k] && strcmp(logs[i].file , file_to_scan) == 0){
+				prev_hash = logs[i].fingerprint;
+				break;
+			}
+		}
         // Iterate for every file in the logs
         for (i = 0; i < logs_len; i++) {
 
             // We care for one user at a time and only for a specific file
             if(logs[i].uid == uids[k] && strcmp(logs[i].file , file_to_scan) == 0){
-                // printf("UID: %d ", logs[i].uid);
-                // printf("File: %s\n", logs[i].file);
-                // If the list is empty...
-                if(hashes_len == 0){
-                    // ... add a hash
-                    hashes[hashes_len] = logs[i].fingerprint;
-                    /// And increase the size
-                    hashes_len++;
-                }
-                // If it's not empty....
-                else {
-                    // ....compare the hash[i] to the hashs in the list
-                    for(int j=0; j<hashes_len; j++){
-                        exists |= (strcmp(hashes[j], logs[i].fingerprint) == 0);
-                    }
-                    // If the hash is unique (not present in the list)...
-                    if(exists != 1){
-                        // ...add the hash
-                        hashes[hashes_len] = logs[i].fingerprint;
-                        // Increase list size
-                        hashes_len++;
-                    }
-                    // Restore value for next iteration
-                    exists = 0;
-                }
+				// printf("%s Vs %s\n", prev_hash, logs[i].fingerprint);
+				if(strcmp(prev_hash, logs[i].fingerprint) != 0){
+					hashes_len++;
+				}
+				prev_hash = logs[i].fingerprint;
             }
         }
         printf("File: %s\n", file_to_scan);
         
         printf("UID: %d", uids[k]);
-        printf("\tTimes modified: %d\n", hashes_len-1);
+        printf("\tTimes modified: %d\n", hashes_len);
         
-        // Print all hashes for each uid (for debugging)
-        for (size_t a = 0; a < hashes_len; a++)
-        {
-            print_string(hashes[a], MD5_DIGEST_LENGTH*2);
-        }
 
         // Restore the list size
         hashes_len = 0;
-        // Erase the list
-        // free(hashes);
 
     }
 	free(data);
     free(logs);
     free(uids);
-    free(hashes);
 	return;
 
 }
