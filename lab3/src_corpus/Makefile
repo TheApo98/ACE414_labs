@@ -16,4 +16,4 @@ clean:
 	rm -rf logger.so
 	rm -rf test_aclog
 	rm -rf acmonitor
-
+	rm file_[0-9]*
