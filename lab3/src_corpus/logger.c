@@ -62,19 +62,25 @@ fopen(const char *path, const char *mode)
 	// If fopen fails, just return?
 	if(original_fopen_ret == NULL){
 		// File doesn't exist (Probably mode="r+")
+		// printf("Error!!! %s, %d\n", strerror(errno), errno);
 	    struct entry logs;
 		logs.file =  (char *)path;
 		logs.time = time(NULL);
 		logs.uid = getuid();
-		logs.access_type = FILE_CREATE;
-		logs.action_denied = 0;
+		logs.access_type = file_exists;
+		// Permission denied
+		if(errno == 13)
+			logs.action_denied = 1;
+		else
+			logs.action_denied = 0;
 		logs.fingerprint = "00000000000000000000000000000000";
 		if(writeLogsToFile(logs) == -1){
 			fprintf(stderr, "Error!!! %s.\n", strerror(errno));
 			exit(EXIT_FAILURE);
 		}
-		else
-			printf("[fopen] Writing logs successful\n");
+		else{
+			// printf("[fopen] Writing logs successful\n");
+		}
 		return original_fopen_ret;
 	}
 
@@ -94,12 +100,8 @@ fopen(const char *path, const char *mode)
     logs.time = time(NULL);
 	logs.uid = getuid();
 	logs.access_type = file_exists;
-
-	// Compare current uid and file uid
-	if(stats.st_uid != logs.uid)
-		logs.action_denied = 1;
-    else
-        logs.action_denied = 0;
+	// If you got to this point, you have access
+	logs.action_denied = 0;
     
 
 	// The MD5 hash from the file
@@ -129,9 +131,9 @@ fopen(const char *path, const char *mode)
 		fprintf(stderr, "Error!!! %s.\n", strerror(errno));
         exit(EXIT_FAILURE);
 	}
-	else
-		printf("[fopen] Writing logs successful\n");
-
+	else{
+		// printf("[fopen] Writing logs successful\n");
+	}
 	free(data);
 	free(md5_hash);
 	free(logs.file);
@@ -179,7 +181,7 @@ fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
 	logs.access_type = 2;
 
 	// Compare current uid and file uid
-	if(stats.st_uid != logs.uid)
+	if(original_fwrite_ret < (int)nmemb)
 		logs.action_denied = 1;
     else
         logs.action_denied = 0;
@@ -206,9 +208,9 @@ fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
 		fprintf(stderr, "Error!!! %s.\n", strerror(errno));
         exit(EXIT_FAILURE);
 	}
-	else
-		printf("[fwrite] Writing logs successful\n");
-
+	else{
+		// printf("[fwrite] Writing logs successful\n");
+	}
 	free(data);
 	free(md5_hash);
 	free(logs.file);
@@ -282,7 +284,7 @@ int writeLogsToFile(struct entry logs){
 	
 	int wr_err = 0;
 	if(!file_exists){
-		wr_err = fprintf(original_fopen_ret, "UID | Filename | Date | Time | Access_Type |Action_Denied | Fingerprint |\n");
+		wr_err = fprintf(original_fopen_ret, "UID | Filename | Date | Time | Access_Type | Action_Denied | Fingerprint |\n");
 	}
 
     char * date = malloc(sizeof(char)*15);
