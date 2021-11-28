@@ -37,6 +37,7 @@ void formatDateTime(struct tm* tm_ptr, char * date, char * time);
 int writeLogsToFile(struct entry logs);
 char * getFilename(FILE *fp);
 struct tm * getDateTime(time_t t);
+void string_to_hex(unsigned char *data, char *out_data, size_t len);
 
 
 
@@ -98,7 +99,9 @@ fopen(const char *path, const char *mode)
     // print_string(data, data_len);
 
     MD5(data, data_len, md5_hash);
-    logs.fingerprint = (char *)md5_hash;
+    // logs.fingerprint = (char *)md5_hash;
+	logs.fingerprint = (char*)malloc(sizeof(char)*(MD5_DIGEST_LENGTH*2));
+	string_to_hex(md5_hash, logs.fingerprint, MD5_DIGEST_LENGTH);
     // printf("After MD5\n");
 
     if(writeLogsToFile(logs) == -1){
@@ -171,7 +174,9 @@ fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
     // print_string(data, data_len);
 
     MD5(data, data_len, md5_hash);
-    logs.fingerprint = (char *)md5_hash;
+	logs.fingerprint = (char*)malloc(sizeof(char)*(MD5_DIGEST_LENGTH*2));
+	string_to_hex(md5_hash, logs.fingerprint, MD5_DIGEST_LENGTH);
+    // logs.fingerprint = (char *)md5_hash;
     // printf("After MD5\n");
 
     if(writeLogsToFile(logs) == -1){
@@ -250,8 +255,8 @@ int writeLogsToFile(struct entry logs){
 	wr_err = fprintf(original_fopen_ret, "%s|", time);
 	wr_err = fprintf(original_fopen_ret, "%d|", logs.access_type);
 	wr_err = fprintf(original_fopen_ret, "%d|", logs.action_denied);
-	wr_err = fwrite(logs.fingerprint , sizeof(unsigned char) , MD5_DIGEST_LENGTH , original_fopen_ret );
-	wr_err = fprintf(original_fopen_ret, "|\n");
+	// wr_err = fwrite(logs.fingerprint , sizeof(unsigned char) , MD5_DIGEST_LENGTH , original_fopen_ret );
+	wr_err = fprintf(original_fopen_ret, "%s|\n", logs.fingerprint);
 	free(date);
 	free(time);
 	fclose(original_fopen_ret);
@@ -291,31 +296,6 @@ int readFromFile(char * filename, unsigned char * data, int * data_len){
     return 0;
 }
 
-int writeToFile(char * filename, unsigned char * data, int data_len){
-    FILE *original_fopen_ret;
-	FILE *(*original_fopen)(const char*, const char*);
-
-	/* call the original fopen function */
-	original_fopen = dlsym(RTLD_NEXT, "fopen");
-	original_fopen_ret = (*original_fopen)(filename, "wb");
-
-    if(original_fopen_ret == NULL){
-        return 1;
-    }
-
-	// size_t original_fwrite_ret;
-	size_t (*original_fwrite)(const void*, size_t, size_t, FILE*);
-
-	/* call the original fwrite function */
-	original_fwrite = dlsym(RTLD_NEXT, "fwrite");
-
-    if((*original_fwrite)(data , sizeof(unsigned char) , data_len , original_fopen_ret ) == 0){
-		fclose(original_fopen_ret);
-        return 1;
-	}
-    fclose(original_fopen_ret);
-    return 0;
-}
 
 void print_hex(unsigned char *data, size_t len)
 {
@@ -346,3 +326,19 @@ void print_string(unsigned char *data, size_t len)
 	}
 }
 
+void string_to_hex(unsigned char *data, char *out_data, size_t len)
+{
+	size_t i;
+	size_t j;
+
+	if (data) {
+        j=0;
+		for (i = 0;  i < len; i++) {
+			if (!(i % 16) && (i != 0))
+				printf("\n");
+			sprintf((out_data+j),"%02X", data[i]);
+            j+=2;
+		}
+		// printf("\n");
+	}
+}
