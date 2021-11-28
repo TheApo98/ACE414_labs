@@ -118,27 +118,23 @@ list_unauthorized_accesses(FILE *log)
     int uids_len = 0;
     int uid_exists = 0;
 
+	// Discard first line
+    if((res = getline(&data, &data_len, log)) == -1) return; 
+
     // Read logs from file line-by-line and store the in struct array
     while ((res = getline(&data, &data_len, log)) != -1) 
     {
         logs[i].file = (char*)malloc(sizeof(char)*100);        
-        logs[i].fingerprint = (char*)malloc(sizeof(char)*MD5_DIGEST_LENGTH);        
-        // printf("Res: %d, i: %d\n", res, i);
+        logs[i].fingerprint = (char*)malloc(sizeof(char)*MD5_DIGEST_LENGTH*2);        
         char* date;// = (unsigned char*)malloc(sizeof(char)*15);
         char* time;// = (unsigned char*)malloc(sizeof(char)*15);
-        // printf("%s\n", data);
         logs[i].uid = atoi(strtok(data, "|"));
-        // printf("Tmp: %s\n", tmp);
         strcpy(logs[i].file, strtok(NULL, "|"));  
         date = strtok(NULL, "|");
         time = strtok(NULL, "|");
-        // printf("Date: %s, time: %s\n", date, time);
         logs[i].access_type = atoi(strtok(NULL, "|"));
         logs[i].action_denied = atoi(strtok(NULL, "|"));
-        // fread(logs[i].fingerprint, sizeof(char), MD5_DIGEST_LENGTH, log);
-        // printf("data: %s\n", data);
-        memcpy(logs[i].fingerprint, strtok(NULL, "\n"), MD5_DIGEST_LENGTH);
-        // print_hex(logs[i].fingerprint, MD5_DIGEST_LENGTH);
+        strcpy(logs[i].fingerprint, strtok(NULL, "|"));
 
             // Find unique UIDs
         // If the list is empty...
@@ -171,31 +167,16 @@ list_unauthorized_accesses(FILE *log)
         
         i++;
     }
-    printf("UIDs length: %d\n", uids_len);
 
     // Get the size of the struct array
     int logs_len = i;
 
-    // // Print every log (for debugging)
-    // for(int j=0; j<i; j++){
-    //     printf("\tLog entry: %d\n", j);
-    //     printf("UID: %d\n", logs[j].uid);
-    //     printf("File name: %s\n", logs[j].file);
-    //     // printf("Date: %s\n", date);
-    //     // printf("Timestamp: %s\n", time);
-    //     printf("Access Type: %d\n", logs[j].access_type);
-    //     printf("Action denied flag: %d\n", logs[j].action_denied);
-    //     printf("Fingerprint(MD5): ");
-    //     print_hex((unsigned char*)logs[j].fingerprint, MD5_DIGEST_LENGTH);
-    //     // print_string((unsigned char*)logs[j].fingerprint, MD5_DIGEST_LENGTH);
-    //     printf("\n\n"); 
-    // }
-
     // Print all uids for debugging
-    for (i = 0; i < uids_len; i++)
-    {
-        printf("UID %d: %d\n", i, *(uids+i));
-    }
+    // printf("UIDs length: %d\n", uids_len);
+    // for (i = 0; i < uids_len; i++)
+    // {
+    //     printf("UID %d: %d\n", i, *(uids+i));
+    // }
         
     // Create an array for unique files (lets call it 'list')
     char ** items = (char**)malloc(sizeof(char*) * logs_len);
@@ -206,6 +187,9 @@ list_unauthorized_accesses(FILE *log)
     // If a files has multiple accesses from one user --> 1
     int exists = 0;
 
+	// Just to print a message if no malicious uid exists
+	int malicious = 0;
+
     for(int k=0; k<uids_len; k++){
 
         // Iterate for every file in the logs
@@ -213,8 +197,6 @@ list_unauthorized_accesses(FILE *log)
 
             // We care for one user at a time and only if he/she has no rights
             if(logs[i].uid == uids[k] && logs[i].action_denied == 1){
-                // printf("UID: %d ", logs[i].uid);
-                // printf("File: %s\n", logs[i].file);
                 // If the list is empty...
                 if(items_len == 0){
                     // ... add a file
@@ -240,6 +222,7 @@ list_unauthorized_accesses(FILE *log)
                 }
             }
         }
+		// User accessed more than 7 files without auth
         if(items_len >= 7){
             printf("Malicious UID: %d\n", uids[k]);
             // Print all files for each uid (for debugging)
@@ -248,14 +231,14 @@ list_unauthorized_accesses(FILE *log)
             {
                 printf("File%d: %s\n", i, *(items+i));
             }
+			malicious |= 1;
         }
 
         // Restore the list size
         items_len = 0;
-        // Erase the list
-        // free(items);
-
     }
+	if(!malicious)
+		printf("No malicious UID found\n");
 
     free(data);
     free(logs);
@@ -269,25 +252,11 @@ list_unauthorized_accesses(FILE *log)
 void
 list_file_modifications(FILE *log, char *file_to_scan)
 {
-
-	/* add your code here */
-	/* ... */
-	/* ... */
-	/* ... */
-	/* ... */
-
     char* data = (unsigned char*)malloc(sizeof(char)*256);
 	size_t data_len = 0;
-	// if(readFromFile(log, data, (int*)&data_len) == 1){
-    //     fprintf(stderr, "Error reading from file, errno: \n%s!\n", strerror(errno));
-    //     exit(EXIT_FAILURE);
-    // }
 	
 	struct entry *logs = (struct entry *)malloc(sizeof(struct entry)*1000);
-	// if(getline(&data, &data_len, log) == 0){
-	// 	fprintf(stderr, "Error!!! %s.\n", strerror(errno));
-    //     exit(EXIT_FAILURE);
-	// }
+
     int i = 0;
     int res = 0;
 
@@ -295,27 +264,23 @@ list_file_modifications(FILE *log, char *file_to_scan)
     int uids_len = 0;
     int uid_exists = 0;
 
+	// Discard first line
+    if((res = getline(&data, &data_len, log)) == -1) return; 
+
     // Read logs from file line-by-line and store the in struct array
     while ((res = getline(&data, &data_len, log)) != -1) 
     {
         logs[i].file = (char*)malloc(sizeof(char)*100);        
-        logs[i].fingerprint = (char*)malloc(sizeof(char)*MD5_DIGEST_LENGTH);        
-        // printf("Res: %d, i: %d\n", res, i);
+        logs[i].fingerprint = (char*)malloc(sizeof(char)*MD5_DIGEST_LENGTH*2);        
         char* date;// = (unsigned char*)malloc(sizeof(char)*15);
         char* time;// = (unsigned char*)malloc(sizeof(char)*15);
-        // printf("%s\n", data);
         logs[i].uid = atoi(strtok(data, "|"));
-        // printf("Tmp: %s\n", tmp);
         strcpy(logs[i].file, strtok(NULL, "|"));  
         date = strtok(NULL, "|");
         time = strtok(NULL, "|");
-        // printf("Date: %s, time: %s\n", date, time);
         logs[i].access_type = atoi(strtok(NULL, "|"));
         logs[i].action_denied = atoi(strtok(NULL, "|"));
-        // fread(logs[i].fingerprint, sizeof(char), MD5_DIGEST_LENGTH, log);
-        // printf("data: %s\n", data);
-        memcpy(logs[i].fingerprint, strtok(NULL, "\n"), MD5_DIGEST_LENGTH);
-        // print_hex(logs[i].fingerprint, MD5_DIGEST_LENGTH);
+        strcpy(logs[i].fingerprint, strtok(NULL, "|"));
 
             // Find unique UIDs
         if(strcmp(logs[i].file, file_to_scan) == 0){
@@ -350,32 +315,32 @@ list_file_modifications(FILE *log, char *file_to_scan)
         }
         i++;
     }
-    printf("UIDs length: %d\n", uids_len);
 
     // Get the size of the struct array
     int logs_len = i;
 
-    // Print every log (for debugging)
-    for(int j=0; j<i; j++){
-        printf("\tLog entry: %d\n", j+1);
-        printf("UID: %d\n", logs[j].uid);
-        printf("File name: %s\n", logs[j].file);
-        // printf("Date: %s\n", date);
-        // printf("Timestamp: %s\n", time);
-        printf("Access Type: %d\n", logs[j].access_type);
-        printf("Action denied flag: %d\n", logs[j].action_denied);
-        printf("Fingerprint(MD5): ");
-        print_hex((unsigned char*)logs[j].fingerprint, MD5_DIGEST_LENGTH);
-        // print_string((unsigned char*)logs[j].fingerprint, MD5_DIGEST_LENGTH);
-        printf("\n\n"); 
-    }
+    // // Print every log (for debugging)
+    // for(int j=0; j<i; j++){
+    //     printf("\tLog entry: %d\n", j+1);
+    //     printf("UID: %d\n", logs[j].uid);
+    //     printf("File name: %s\n", logs[j].file);
+    //     // printf("Date: %s\n", date);
+    //     // printf("Timestamp: %s\n", time);
+    //     printf("Access Type: %d\n", logs[j].access_type);
+    //     printf("Action denied flag: %d\n", logs[j].action_denied);
+    //     printf("Fingerprint(MD5): %s\n", logs[j].fingerprint);
+    //     // print_hex((unsigned char*)logs[j].fingerprint, MD5_DIGEST_LENGTH);
+    //     // print_string((unsigned char*)logs[j].fingerprint, MD5_DIGEST_LENGTH);
+    //     printf("\n\n"); 
+    // }
 
 
     // Print all uids for debugging
-    for (i = 0; i < uids_len; i++)
-    {
-        printf("UID %d: %d\n", i, *(uids+i));
-    }
+    // printf("UIDs length: %d\n", uids_len);
+    // for (i = 0; i < uids_len; i++)
+    // {
+    //     printf("UID %d: %d\n", i, *(uids+i));
+    // }
     
 
     // Create an array for unique files (lets call it 'list')
@@ -426,12 +391,11 @@ list_file_modifications(FILE *log, char *file_to_scan)
         printf("UID: %d", uids[k]);
         printf("\tTimes modified: %d\n", hashes_len);
         
-        // Print all uids for debugging
+        // Print all hashes for each uid (for debugging)
         for (size_t a = 0; a < hashes_len; a++)
         {
-            print_hex(hashes[a], MD5_DIGEST_LENGTH);
+            print_string(hashes[a], MD5_DIGEST_LENGTH*2);
         }
-        // Print all hashes for each uid (for debugging)
 
         // Restore the list size
         hashes_len = 0;
@@ -439,7 +403,10 @@ list_file_modifications(FILE *log, char *file_to_scan)
         // free(hashes);
 
     }
-
+	free(data);
+    free(logs);
+    free(uids);
+    free(hashes);
 	return;
 
 }
