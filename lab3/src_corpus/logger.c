@@ -13,6 +13,10 @@
 #include <errno.h>
 #include <string.h>
 
+#define FILE_CREATE	0
+#define FILE_OPEN 	1
+#define FILE_WRITE 	1
+
 struct entry {
 
 	int uid; /* user id (positive integer) */
@@ -29,8 +33,6 @@ struct entry {
 };
 
 // Declare functions here
-void print_hex(unsigned char *data, size_t len);
-void print_string(unsigned char *data, size_t len);
 int readFromFile(char * filename, unsigned char * data, int * data_len);
 int writeToFile(char * filename, unsigned char * data, int data_len);
 void formatDateTime(struct tm* tm_ptr, char * date, char * time);
@@ -48,13 +50,31 @@ fopen(const char *path, const char *mode)
 	FILE *original_fopen_ret;
 	FILE *(*original_fopen)(const char*, const char*);
 
+	// Code executed before fopen_original
+	int file_exists = access(path, F_OK) + 1;
+
 	/* call the original fopen function */
 	original_fopen = dlsym(RTLD_NEXT, "fopen");
 	original_fopen_ret = (*original_fopen)(path, mode);
 
 	// If fopen fails, just return?
-	if(original_fopen_ret == NULL)
+	if(original_fopen_ret == NULL){
+		// File doesn't exist (Probably mode="r+")
+	    struct entry logs;
+		logs.file =  (char *)path;
+		logs.time = time(NULL);
+		logs.uid = getuid();
+		logs.access_type = FILE_CREATE;
+		logs.action_denied = 0;
+		logs.fingerprint = "00000000000000000000000000000000";
+		if(writeLogsToFile(logs) == -1){
+			fprintf(stderr, "Error!!! %s.\n", strerror(errno));
+			exit(EXIT_FAILURE);
+		}
+		else
+			printf("[fopen] Writing logs successful\n");
 		return original_fopen_ret;
+	}
 
 
 	// Get file stats
@@ -67,30 +87,23 @@ fopen(const char *path, const char *mode)
 	
 	// Create entry struct
     struct entry logs;
-
-	logs.file = (char *)path;
+	// logs.file = (char *)path;
 	logs.file = getFilename(original_fopen_ret);
     logs.time = time(NULL);
-
-    // printf("After Time\n");
-
 	logs.uid = getuid();
-	logs.access_type = access(logs.file, F_OK) + 1;
+	logs.access_type = file_exists;
 
 	// Compare current uid and file uid
 	if(stats.st_uid != logs.uid)
 		logs.action_denied = 1;
     else
         logs.action_denied = 0;
-    // printf("After action_denied_flag\n");
     
 
 	// The MD5 hash from the file
     unsigned char* md5_hash = (unsigned char*)malloc(MD5_DIGEST_LENGTH);
     unsigned char* data = (unsigned char*)malloc(sizeof(char)*256);
 	size_t data_len = 0;
-	printf("Before readFromFile in fopen\n");
-	printf("File: %s\n", logs.file);
 	if(readFromFile(logs.file, data, (int*)&data_len) == 1){
         fprintf(stderr, "Error reading from file, errno: \n%s!\n", strerror(errno));
         exit(EXIT_FAILURE);
@@ -98,21 +111,29 @@ fopen(const char *path, const char *mode)
     // printf("After readFromFile\n");
     // print_string(data, data_len);
 
-    MD5(data, data_len, md5_hash);
-    // logs.fingerprint = (char *)md5_hash;
 	logs.fingerprint = (char*)malloc(sizeof(char)*(MD5_DIGEST_LENGTH*2));
-	string_to_hex(md5_hash, logs.fingerprint, MD5_DIGEST_LENGTH);
-    // printf("After MD5\n");
+	// If there are data in the file, generate MD5 hash.....
+	if(data_len > 0){
+		MD5(data, data_len, md5_hash);
+		// logs.fingerprint = (char *)md5_hash;
+		string_to_hex(md5_hash, logs.fingerprint, MD5_DIGEST_LENGTH);
+		// printf("After MD5\n");
+	}
+	//... if not, hash = '0'
+	else 
+		memcpy(logs.fingerprint, "00000000000000000000000000000000", MD5_DIGEST_LENGTH*2);
 
     if(writeLogsToFile(logs) == -1){
 		fprintf(stderr, "Error!!! %s.\n", strerror(errno));
         exit(EXIT_FAILURE);
 	}
 	else
-		printf("Write successful\n");
+		printf("[fopen] Writing logs successful\n");
 
 	free(data);
 	free(md5_hash);
+	free(logs.file);
+	free(logs.fingerprint);
 
 	return original_fopen_ret;
 }
@@ -121,18 +142,20 @@ fopen(const char *path, const char *mode)
 size_t 
 fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream) 
 {
-
 	size_t original_fwrite_ret;
 	size_t (*original_fwrite)(const void*, size_t, size_t, FILE*);
 
 	/* call the original fwrite function */
 	original_fwrite = dlsym(RTLD_NEXT, "fwrite");
 	original_fwrite_ret = (*original_fwrite)(ptr, size, nmemb, stream);
-
+	
+	// Flush the output to file so we can read the new data
+	// We can't wait for fclose, we need them now!!!
+	fflush(stream);
 
 	// If fopen fails, just return?
-	if(original_fwrite_ret == (int)nmemb)
-		return original_fwrite_ret;
+	// if(original_fwrite_ret == (int)nmemb)
+	// 	return original_fwrite_ret;
 
 	// Get file stats
 	struct stat stats;
@@ -160,12 +183,10 @@ fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
         logs.action_denied = 0;
     // printf("After action_denied_flag\n");
     
-
 	// The MD5 hash from the file
     unsigned char* md5_hash = (unsigned char*)malloc(MD5_DIGEST_LENGTH);
     unsigned char* data = (unsigned char*)malloc(sizeof(char)*256);
 	size_t data_len = 0;
-	printf("Before readFromFile in fwrite\n");
 	if(readFromFile(logs.file, data, (int*)&data_len) == 1){
         fprintf(stderr, "Error reading from file, errno: \n%s!\n", strerror(errno));
         exit(EXIT_FAILURE);
@@ -184,11 +205,12 @@ fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
         exit(EXIT_FAILURE);
 	}
 	else
-		printf("Write successful\n");
+		printf("[fwrite] Writing logs successful\n");
 
 	free(data);
 	free(md5_hash);
-
+	free(logs.file);
+	free(logs.fingerprint);
 
 	return original_fwrite_ret;
 }
@@ -212,9 +234,18 @@ char * getFilename(FILE *fp){
     }
     filename[r] = '\0';
     free(proclnk);
-    // free(filename);
     // printf("File Name: %s\n", filename);
-    return filename;
+	
+    char * relative_path = (char *)malloc(sizeof(char)*MAXSIZE);
+    char * token;
+	token = strtok(filename, "/");
+	while( token != NULL ) {
+		strcpy(relative_path , token);
+		token = strtok(NULL, "/");
+	}
+    free(filename);
+    return relative_path;
+    // return filename;
 }
 
 // Date and time
@@ -255,7 +286,6 @@ int writeLogsToFile(struct entry logs){
 	wr_err = fprintf(original_fopen_ret, "%s|", time);
 	wr_err = fprintf(original_fopen_ret, "%d|", logs.access_type);
 	wr_err = fprintf(original_fopen_ret, "%d|", logs.action_denied);
-	// wr_err = fwrite(logs.fingerprint , sizeof(unsigned char) , MD5_DIGEST_LENGTH , original_fopen_ret );
 	wr_err = fprintf(original_fopen_ret, "%s|\n", logs.fingerprint);
 	free(date);
 	free(time);
@@ -279,7 +309,6 @@ int readFromFile(char * filename, unsigned char * data, int * data_len){
 	original_fopen_ret = (*original_fopen)(filename, "rb");
 	
 	if(original_fopen_ret == NULL){
-		printf("After original_fopen_ret == NULL\n");
         return 1;
     }
     /* File commands */ 
@@ -287,45 +316,15 @@ int readFromFile(char * filename, unsigned char * data, int * data_len){
     fseek(original_fopen_ret, 0, SEEK_END);     // go to file end
     *data_len = ftell(original_fopen_ret);           // calculate the file size
     rewind(original_fopen_ret);                 // go to file start and...
-    if(fread(data, *data_len, sizeof(unsigned char), original_fopen_ret) == 0){
+    if(fread(data, *data_len, sizeof(unsigned char), original_fopen_ret) < 0){
         fclose(original_fopen_ret);
-		printf("Data: %s\n", data);
         return 1;
     }
     fclose(original_fopen_ret);
     return 0;
 }
 
-
-void print_hex(unsigned char *data, size_t len)
-{
-	size_t i;
-
-	if (!data)
-		printf("NULL data\n");
-	else {
-		for (i = 0; i < len; i++) {
-			if (!(i % 16) && (i != 0))
-				printf("\n");
-			printf("%02X ", data[i]);
-		}
-		printf("\n");
-	}
-}
-
-void print_string(unsigned char *data, size_t len)
-{
-	size_t i;
-
-	if (!data)
-		printf("NULL data\n");
-	else {
-		for (i = 0; i < len; i++)
-			printf("%c", data[i]);
-		printf("\n");
-	}
-}
-
+// A modified version of print_hex, to convert MD5 hash to a hex string
 void string_to_hex(unsigned char *data, char *out_data, size_t len)
 {
 	size_t i;
@@ -334,8 +333,8 @@ void string_to_hex(unsigned char *data, char *out_data, size_t len)
 	if (data) {
         j=0;
 		for (i = 0;  i < len; i++) {
-			if (!(i % 16) && (i != 0))
-				printf("\n");
+			// if (!(i % 16) && (i != 0))
+			// 	printf("\n");
 			sprintf((out_data+j),"%02X", data[i]);
             j+=2;
 		}
