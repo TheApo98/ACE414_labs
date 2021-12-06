@@ -13,10 +13,37 @@
 size_t *
 sieve_of_eratosthenes(int limit, int *primes_sz)
 {
-	size_t *primes;
+	size_t *primes = malloc(sizeof(int)*limit);
 
 	/* TODO */	
+	int p_index = 0; 
 
+	// Array with size limit+1...
+	// the stored value dictates if index is prime (0=false, 1=true) 
+	int prime[limit + 1];
+    // memset(prime, 1, sizeof(prime));
+    for (size_t i = 0; i < limit+1; i++)
+    {
+        *(prime+i) = 1;
+    }
+ 
+	// Check every number from 2 up to limit
+    for (int p = 2; p  <= limit; p++)
+    {
+		// if the value in prime[] is true, the it's a prime
+        if (prime[p] == 1)
+        {
+			// store the prime in the returned array...
+            primes[p_index] = p;
+			// ...and increase the size of that array
+			p_index++;
+			// Mark the position for all composite numbers 
+            for (int i = p * p; i <= limit; i += p)
+                prime[i] = 0;
+        }
+    }
+	// Set the prime array size
+	*primes_sz = p_index;
 	return primes;
 }
 
