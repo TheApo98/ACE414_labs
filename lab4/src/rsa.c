@@ -45,7 +45,7 @@ sieve_of_eratosthenes(int limit, int *primes_sz)
 
 	// Free temp array
 	free(prime);
-	
+
 	// Set the prime array size
 	*primes_sz = p_index;
 	return primes;
@@ -64,8 +64,13 @@ int
 gcd(int a, int b)
 {
 
-	/* TODO */
-
+	for(int i=2; i <= a && i <= b; i++)
+    {
+        // Checks if i is factor of both integers
+        if( a % i == 0 && b % i == 0 )
+            return i;
+    }
+	return 1;
 }
 
 
