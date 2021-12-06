@@ -13,14 +13,14 @@
 size_t *
 sieve_of_eratosthenes(int limit, int *primes_sz)
 {
-	size_t *primes = malloc(sizeof(int)*limit);
+	size_t *primes = (size_t*)malloc(sizeof(int)*limit);
 
 	/* TODO */	
 	int p_index = 0; 
 
 	// Array with size limit+1...
 	// the stored value dictates if index is prime (0=false, 1=true) 
-	int prime[limit + 1];
+	int *prime = (int*)malloc(sizeof(int)*(limit+1));
     // memset(prime, 1, sizeof(prime));
     for (size_t i = 0; i < limit+1; i++)
     {
@@ -42,6 +42,10 @@ sieve_of_eratosthenes(int limit, int *primes_sz)
                 prime[i] = 0;
         }
     }
+
+	// Free temp array
+	free(prime);
+	
 	// Set the prime array size
 	*primes_sz = p_index;
 	return primes;
