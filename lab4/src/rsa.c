@@ -63,14 +63,14 @@ sieve_of_eratosthenes(int limit, int *primes_sz)
 int
 gcd(int a, int b)
 {
-
-	for(int i=2; i <= a && i <= b; i++)
+	while(a!=b)
     {
-        // Checks if i is factor of both integers
-        if( a % i == 0 && b % i == 0 )
-            return i;
+        if(a > b)
+            a -= b;
+        else
+            b -= a;
     }
-	return 1;
+    return a;
 }
 
 
