@@ -3,6 +3,8 @@
 
 #include <errno.h>
 #include <error.h>
+#include <limits.h>
+#include <math.h>
 
 /*
  * Sieve of Eratosthenes Algorithm
@@ -175,17 +177,6 @@ rsa_keygen(void)
         exit(EXIT_FAILURE);
     }
 
-	// if(readKeyFromFile("../files/public.key", &n, &e) == 1){
-    //     fprintf(stderr, "Error reading from file, errno: \n%s!\n", strerror(errno));
-    //     exit(EXIT_FAILURE);
-    // }
-
-    // if(readKeyFromFile("../files/private.key", &n, &d) == 1){
-    //     fprintf(stderr, "Error reading from file, errno: \n%s!\n", strerror(errno));
-    //     exit(EXIT_FAILURE);
-    // }
-	// // printf("n=%ld, e=%ld, d=%ld\n", n , e ,d);
-
 	free(primes);
 
 }
@@ -201,9 +192,59 @@ rsa_keygen(void)
 void
 rsa_encrypt(char *input_file, char *output_file, char *key_file)
 {
+	// Declare variables
+	size_t n;
+	size_t e;
 
-	/* TODO */
+	// Read public key
+	if(readKeyFromFile(key_file, &n, &e) == 1){
+        fprintf(stderr, "Error reading from file, errno: \n%s!\n", strerror(errno));
+        exit(EXIT_FAILURE);
+    }
 
+	// Allocate space for plain and cipher text 	
+	int		plain_len	= 255;      // max size
+	size_t	cipher_len 	= 8*255;
+	size_t 			* cipherText 	= (size_t*)malloc(sizeof(size_t)*cipher_len);
+	unsigned char 	* plainText 	= (unsigned char*)malloc(sizeof(unsigned char)*plain_len);
+
+	// Read plain text from file
+	if(readFromFile(input_file, plainText, &plain_len) == 1){
+		fprintf(stderr, "Failed to read from file\n");
+		exit(EXIT_FAILURE);
+	}
+
+	// Encryption
+	for(int i=0; i<plain_len; i++){
+		cipherText[i] = (size_t)pow(plainText[i], e) % n; 
+	}
+	cipher_len = plain_len * sizeof(size_t);
+
+	// Reallocation to aviod memory leaks 
+	cipherText 	= (size_t*)realloc(cipherText, sizeof(size_t)*cipher_len);
+	plainText 	= (unsigned char*)realloc(plainText, sizeof(unsigned char)*plain_len);
+
+	/* Print password, key */ 
+	// printf("Pass: %s\n", password);
+	// printf("Key: ");
+	// print_hex(key, sizeof(char)*bit_mode/8);
+	
+	/* Print plain and cipher Text */
+	printf("\tPlain text length: %d\n", plain_len);
+	print_string(plainText, (size_t)plain_len);
+	printf("\tCipher text length: %d\n", (int)cipher_len);
+	// printf("\n%ld!\n\n", sizeof(cipherText[1]));
+
+	// print_hex(cipherText, cipher_len);
+
+	// Write cipher text to file
+	if(writeToFile(output_file, cipherText, cipher_len) == 1){
+		fprintf(stderr, "Failed to write to file\n");
+		exit(EXIT_FAILURE);
+	}
+
+	free(plainText);
+	free(cipherText);
 }
 
 
