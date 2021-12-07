@@ -7,7 +7,7 @@
  * arg1: data len
  */
 void
-print_hex(long *data, size_t len)
+print_hex(unsigned long *data, size_t len)
 {
 	size_t i;
 
@@ -16,8 +16,8 @@ print_hex(long *data, size_t len)
 	else {
 		for (i = 0; i < len; i++) {
 			if (!(i % 16) && (i != 0))
-				printf("%02X ", data[i]);
-			printf("%02X ", data[i]);
+				printf("%02lX ", data[i]);
+			printf("%02lX ", data[i]);
 		}
 		printf("\n");
 	}
@@ -54,9 +54,9 @@ usage(void)
 	printf(
 	    "\n"
 	    "Usage:\n"
-	    "    assign_3 -g \n" 
-	    "    assign_3 -i in_file -o out_file -k key_file [-d | -e]\n" 
-	    "    assign_3 -h\n"
+	    "    assign_4 -g \n" 
+	    "    assign_4 -i in_file -o out_file -k key_file [-d | -e]\n" 
+	    "    assign_4 -h\n"
 	);
 	printf(
 	    "\n"

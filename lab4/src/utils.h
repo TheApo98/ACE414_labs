@@ -12,7 +12,7 @@
  * arg1: data len
  */
 void
-print_hex(long *, size_t);
+print_hex(unsigned long *, size_t);
 
 
 /*
