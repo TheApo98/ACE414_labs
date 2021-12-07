@@ -7,7 +7,7 @@
  * arg1: data len
  */
 void
-print_hex(unsigned char *data, size_t len)
+print_hex(long *data, size_t len)
 {
 	size_t i;
 
@@ -106,3 +106,86 @@ check_args(char *input_file, char *output_file, char *key_file, int op_mode)
 }
 
 
+// My utils
+int readFromFile(char * filename, void * data, int * len){
+    FILE *fp;
+   	fp = fopen(filename, "rb");
+    if(fp == NULL){
+        return 1;
+    }
+    /* File commands */ 
+    /* (necessary for reading special characters like EOF, etc) */
+    fseek(fp, 0, SEEK_END);     // go to file end
+    *len = ftell(fp);           // calculate the file size
+    rewind(fp);                 // go to file start and...
+    if(fread(data, *len, sizeof(void), fp) == 0){
+        fclose(fp);
+        return 1;
+    }
+    fclose(fp);
+    return 0;
+}
+
+int writeToFile(char * filename, void * data, int len){
+    FILE *fp;
+   	fp = fopen(filename, "wb");
+    if(fp == NULL){
+        return 1;
+    }
+
+    if(fwrite(data , sizeof(data[1]) , len , fp ) == 0){
+		fclose(fp);
+        return 1;
+	}
+    // fputs((const char*)data, fp);
+    fclose(fp);
+    return 0;
+}
+
+int appendToFile(char * filename, unsigned char * data, int len){
+    FILE *fp;
+   	fp = fopen(filename, "ab");
+    if(fp == NULL){
+        return 1;
+    }
+
+    if(fwrite(data , sizeof(unsigned char) , len , fp ) == 0){
+		fclose(fp);
+        return 1;
+	}
+    // fputs((const char*)data, fp);
+    fclose(fp);
+    return 0;
+}
+
+int writeKeyToFile(char * filename, size_t n, size_t eORd){
+    FILE *fp;
+   	fp = fopen(filename, "wb");
+    if(fp == NULL){
+        return 1;
+    }
+
+    if(fwrite(&n , sizeof(size_t) , 1 , fp ) == 0 || fwrite(&eORd , sizeof(size_t) , 1 , fp ) == 0){
+		fclose(fp);
+        return 1;
+	}
+    // fputs((const char*)data, fp);
+    fclose(fp);
+    return 0;
+}
+
+int readKeyFromFile(char * filename, size_t * n, size_t * eORd){
+    FILE *fp;
+   	fp = fopen(filename, "rb");
+    if(fp == NULL){
+        return 1;
+    }
+
+    if(fread(n , sizeof(size_t) , 1 , fp ) == 0 || fread(eORd , sizeof(size_t) , 1 , fp ) == 0){
+		fclose(fp);
+        return 1;
+	}
+    // fputs((const char*)data, fp);
+    fclose(fp);
+    return 0;
+}

@@ -12,7 +12,7 @@
  * arg1: data len
  */
 void
-print_hex(unsigned char *, size_t);
+print_hex(long *, size_t);
 
 
 /*
@@ -43,5 +43,11 @@ usage(void);
 void
 check_args(char *, char *, char *, int);
 
+// My utils
+int readFromFile(char * filename, void * data, int * len);
+int writeToFile(char * filename, void * data, int len);
+int appendToFile(char * filename, unsigned char * data, int len);
+int writeKeyToFile(char * filename, size_t n, size_t eORd);
+int readKeyFromFile(char * filename, size_t * n, size_t * eORd);
 
 #endif /* _UTILS_H */
