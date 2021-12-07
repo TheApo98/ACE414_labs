@@ -1,6 +1,9 @@
 #include "rsa.h"
 #include "utils.h"
 
+#include <errno.h>
+#include <error.h>
+
 /*
  * Sieve of Eratosthenes Algorithm
  * https://en.wikipedia.org/wiki/Sieve_of_Eratosthenes
@@ -88,8 +91,15 @@ choose_e(size_t fi_n)
 	size_t e;
 
 	/* TODO */
+	e = 1;
+	while(1){
+		e++;
+        if((e % fi_n != 0) && (gcd(e, fi_n) == 1))
+            return e;
+	}
 
-	return e;
+	// failed to choose e
+	return -1;
 }
 
 
@@ -106,6 +116,10 @@ mod_inverse(size_t a, size_t b)
 {
 
 	/* TODO */
+	for (int i = 1; i < b; i++)
+		if (((a%b) * (i%b)) % b == 1)
+			return i;
+	return 1;
 
 }
 
@@ -125,6 +139,52 @@ rsa_keygen(void)
 	size_t d;
 
 	/* TODO */
+	int primes_sz = 0;
+	size_t * primes = sieve_of_eratosthenes(RSA_SIEVE_LIMIT, &primes_sz);
+
+	// Check if there are at least 2 prime number in the array
+	if(primes_sz < 2){
+		fprintf(stderr, "Not enough prime numbers in the pool!!\n");
+        exit(EXIT_FAILURE);
+	}
+
+	// Pick two "random" primes from the pool
+	do{
+		int index = rand() % primes_sz;
+		p = primes[index];
+		index = rand() % primes_sz;
+		q = primes[index];
+	} while (p == q);
+	
+	// printf("p= %d, q=%d\n", p, q);
+	n = p * q;
+	fi_n = (p-1) * (q-1);
+	e = choose_e(fi_n);
+	d = mod_inverse(e, fi_n);
+	// printf("n=%ld, e=%ld, d=%ld\n", n , e ,d);
+
+	// Store public key
+	if(writeKeyToFile("../files/public.key", n, e) == 1){
+        fprintf(stderr, "Error writing to file, errno: \n%s!\n", strerror(errno));
+        exit(EXIT_FAILURE);
+    }
+
+	// Store private key
+	if(writeKeyToFile("../files/private.key", n, d) == 1){
+        fprintf(stderr, "Error writing to file, errno: \n%s!\n", strerror(errno));
+        exit(EXIT_FAILURE);
+    }
+
+	// if(readKeyFromFile("../files/public.key", &n, &e) == 1){
+    //     fprintf(stderr, "Error reading from file, errno: \n%s!\n", strerror(errno));
+    //     exit(EXIT_FAILURE);
+    // }
+
+    // if(readKeyFromFile("../files/private.key", &n, &d) == 1){
+    //     fprintf(stderr, "Error reading from file, errno: \n%s!\n", strerror(errno));
+    //     exit(EXIT_FAILURE);
+    // }
+	// // printf("n=%ld, e=%ld, d=%ld\n", n , e ,d);
 
 }
 
