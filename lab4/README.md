@@ -87,7 +87,7 @@ Finally, the cipher text is written to the output file using ```writeToFile(outp
 <p>&nbsp;</p>
 
 ## <center>*Using the tool*</center>
-To test the tool, the fooling command where executed:
+To test the tool, the following command where executed:
 1. Encryption using the public key 
    ```
    ./assign_4 -i ../files/hpy414_encryptme_pub.txt -o ../outputFiles/TUC2017030142_encrypted_pub.txt -k ../files/hpy414_public.key -e
