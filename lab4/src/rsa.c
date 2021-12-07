@@ -186,6 +186,8 @@ rsa_keygen(void)
     // }
 	// // printf("n=%ld, e=%ld, d=%ld\n", n , e ,d);
 
+	free(primes);
+
 }
 
 
