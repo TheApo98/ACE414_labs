@@ -166,88 +166,22 @@ rsa_keygen(void)
 	// printf("n=%ld, e=%ld, d=%ld\n", n , e ,d);
 
 	// Store public key
-	if(writeKeyToFile("../files/public.key", n, e) == 1){
+	if(writeKeyToFile("../outputFiles/public.key", n, e) == 1){
         fprintf(stderr, "Error writing to file, errno: \n%s!\n", strerror(errno));
         exit(EXIT_FAILURE);
     }
 
 	// Store private key
-	if(writeKeyToFile("../files/private.key", n, d) == 1){
+	if(writeKeyToFile("../outputFiles/private.key", n, d) == 1){
         fprintf(stderr, "Error writing to file, errno: \n%s!\n", strerror(errno));
         exit(EXIT_FAILURE);
     }
 
+	printf("Key pair generated successfully!!!\n");
+
 	free(primes);
 
 }
-
-
-/*
- * Encrypts an input file and dumps the ciphertext into an output file
- *
- * arg0: path to input file
- * arg1: path to output file
- * arg2: path to key file
- */
-void
-rsa_encrypt(char *input_file, char *output_file, char *key_file)
-{
-	// Declare variables
-	size_t n;
-	size_t e;
-
-	// Read public key
-	if(readKeyFromFile(key_file, &n, &e) == 1){
-        fprintf(stderr, "Error reading from file, errno: \n%s!\n", strerror(errno));
-        exit(EXIT_FAILURE);
-    }
-
-	// Allocate space for plain and cipher text 	
-	int		plain_len	= 255;      // max size
-	size_t	cipher_len 	= 8*255;
-	size_t 			* cipherText 	= (size_t*)malloc(sizeof(size_t)*cipher_len);
-	unsigned char 	* plainText 	= (unsigned char*)malloc(sizeof(unsigned char)*plain_len);
-
-	// Read plain text from file
-	if(readFromFile(input_file, plainText, &plain_len) == 1){
-		fprintf(stderr, "Failed to read from file\n");
-		exit(EXIT_FAILURE);
-	}
-	// printf("e = %d, n = %d, plTx[1]=%d\n", e,n, plainText[0]);
-
-	// Encryption
-	for(int i=0; i<plain_len; i++){
-		cipherText[i] = (unsigned char)((size_t)pow(plainText[i], e) % n); 
-	}
-	cipher_len = plain_len * sizeof(size_t);
-
-	// Reallocation to aviod memory leaks 
-	cipherText 	= (size_t*)realloc(cipherText, sizeof(size_t)*cipher_len);
-	plainText 	= (unsigned char*)realloc(plainText, sizeof(unsigned char)*plain_len);
-
-	/* Print password, key */ 
-	// printf("Pass: %s\n", password);
-	// printf("Key: ");
-	// print_hex(key, sizeof(char)*bit_mode/8);
-	
-	/* Print plain and cipher Text */
-	printf("\tPlain text length: %d\n", plain_len);
-	print_string(plainText, (size_t)plain_len);
-	printf("\tCipher text length: %d\n", (int)cipher_len);
-	print_hex(cipherText, cipher_len/8);
-	// printf("\n%ld!\n\n", sizeof(cipherText[1]));
-
-
-	// Write cipher text to file
-	if(writeToFile(output_file, cipherText, cipher_len) == 1){
-		fprintf(stderr, "Failed to write to file, errno: \n%s!\n", strerror(errno));
-		exit(EXIT_FAILURE);
-	}
-
-	free(plainText);
-	free(cipherText);
-}
-
 
 // (a^b) % MOD = ((a % MOD)^b) % MOD
 // ( a * b) % c = ( ( a % c ) * ( b % c ) ) % c
@@ -268,8 +202,72 @@ size_t largeNumberPowerMod(size_t cipher, size_t exp, size_t n)
 		return (largeNumberPowerMod(cipher * (cipher%n), exp/2, n) % n);
 	else
 		return (cipher*largeNumberPowerMod(cipher , exp-1, n) % n);
+}
+
+/*
+ * Encrypts an input file and dumps the ciphertext into an output file
+ *
+ * arg0: path to input file
+ * arg1: path to output file
+ * arg2: path to key file
+ */
+void
+rsa_encrypt(char *input_file, char *output_file, char *key_file)
+{
+	// Declare variables
+	size_t n;
+	size_t e;
+
+	// Read key
+	if(readKeyFromFile(key_file, &n, &e) == 1){
+        fprintf(stderr, "[ENC]Error reading from file, errno: \n%s!\n", strerror(errno));
+        exit(EXIT_FAILURE);
+    }
+
+	// printf("e=%ld, n=%ld\n", e,n);
+	// Allocate space for plain and cipher text 	
+	int		plain_len	= 255;      // max size
+	size_t	cipher_len 	= 8*255;
+	size_t 			* cipherText 	= (size_t*)malloc(sizeof(size_t)*cipher_len);
+	unsigned char 	* plainText 	= (unsigned char*)malloc(sizeof(unsigned char)*plain_len);
+
+	// Read plain text from file
+	if(readFromFile(input_file, plainText, &plain_len) == 1){
+		fprintf(stderr, "[ENC]Failed to read from file\n");
+		exit(EXIT_FAILURE);
+	}
+
+	// Encryption
+	for(int i=0; i<plain_len; i++){
+		// Casting to "unsigned char" breaks everything
+		cipherText[i] = largeNumberPowerMod(plainText[i], e, n); 
+	}
+	cipher_len = plain_len * sizeof(size_t);
+
+	// Reallocation to aviod memory leaks 
+	cipherText 	= (size_t*)realloc(cipherText, sizeof(size_t)*cipher_len);
+	plainText 	= (unsigned char*)realloc(plainText, sizeof(unsigned char)*plain_len);
+
+	// printf("Key: ");
+	// print_hex(key, sizeof(char)*bit_mode/8);
+	
+	/* Print plain and cipher Text */
+	printf("\tPlain text length: %d\n", plain_len);
+	print_string(plainText, (size_t)plain_len);
+	printf("\tCipher text length: %d\n", (int)cipher_len);
+	print_hex(cipherText, cipher_len/sizeof(size_t));
+	printf("\n\n");
+	// printf("\n%ld!\n\n", sizeof(cipherText[1]));
 
 
+	// Write cipher text to file
+	if(writeToFile(output_file, cipherText, cipher_len) == 1){
+		fprintf(stderr, "[ENC]Failed to write to file, errno: \n%s!\n", strerror(errno));
+		exit(EXIT_FAILURE);
+	}
+
+	free(plainText);
+	free(cipherText);
 }
 
 
@@ -290,7 +288,7 @@ rsa_decrypt(char *input_file, char *output_file, char *key_file)
 
 	// Read public key
 	if(readKeyFromFile(key_file, &n, &d) == 1){
-        fprintf(stderr, "Error reading from file, errno: \n%s!\n", strerror(errno));
+        fprintf(stderr, "[DECR]Error reading from file, errno: \n%s!\n", strerror(errno));
         exit(EXIT_FAILURE);
     }
 
@@ -302,25 +300,23 @@ rsa_decrypt(char *input_file, char *output_file, char *key_file)
 
 	// Read plain text from file
 	if(readFromFile(input_file, cipherText, (int*)&cipher_len) == 1){
-		fprintf(stderr, "Failed to read from file\n");
+		fprintf(stderr, "[DECR]Failed to read from file\n");
 		exit(EXIT_FAILURE);
 	}
 
-	printf("d = %ld, n = %ld, plTx[1]=%d\n", d,n, plainText[0]);
-	// Encryption
+	// Decryption
 	size_t res;
 	plain_len = cipher_len / sizeof(size_t);
 	long long remainderB = 0;
 	for(int i=0; i<plain_len; i++){
-		plainText[i] = (unsigned char)largeNumberPowerMod(cipherText[i], d, n);
+		plainText[i] = largeNumberPowerMod(cipherText[i], d, n);
 	}
 
 	// Reallocation to aviod memory leaks 
 	cipherText 	= (size_t*)realloc(cipherText, sizeof(size_t)*cipher_len);
 	plainText 	= (unsigned char*)realloc(plainText, sizeof(unsigned char)*plain_len);
 
-	/* Print password, key */ 
-	// printf("Pass: %s\n", password);
+	/* Print key */ 
 	// printf("Key: ");
 	// print_hex(key, sizeof(char)*bit_mode/8);
 	
@@ -328,13 +324,14 @@ rsa_decrypt(char *input_file, char *output_file, char *key_file)
 	printf("\tPlain text length: %d\n", plain_len);
 	print_string(plainText, (size_t)plain_len);
 	printf("\tCipher text length: %d\n", (int)cipher_len);
-	print_hex(cipherText, cipher_len/8);
+	print_hex(cipherText, cipher_len/sizeof(size_t));
+	printf("\n\n");
 	// printf("\n%ld!\n\n", sizeof(cipherText[1]));
 
 
 	// Write cipher text to file
 	if(writeToFile(output_file, plainText, plain_len) == 1){
-		fprintf(stderr, "Failed to write to file, errno: \n%s!\n", strerror(errno));
+		fprintf(stderr, "[DECR]Failed to write to file, errno: \n%s!\n", strerror(errno));
 		exit(EXIT_FAILURE);
 	}
 
