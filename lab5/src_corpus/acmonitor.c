@@ -7,6 +7,7 @@
 // Added libraries
 #include <errno.h>
 #include <openssl/md5.h>
+#include <time.h>
 
 struct entry {
 
@@ -70,6 +71,74 @@ void print_string(unsigned char *data, size_t len)
 	}
 }
 
+// Date and time
+struct tm * getDateTime(time_t t){
+	struct tm* tm_ptr;
+	// Convert it to local time and fill the struct
+    tm_ptr = localtime(&t);
+	// Convert using struct to human readable string
+    // char * dateTime = asctime(tm_ptr);
+    return tm_ptr;
+}
+
+
+time_t get_raw_dateTime(char* file_date, char* file_time){
+    /******************************
+     * Time format = "00:40:13"
+     * Date format = "13-12-2021"
+     * ***************************/
+
+    struct tm tm1;       
+
+    // Print for debugging
+    // printf("Date: %s, Time: %s\n", file_date, file_time);
+
+    // Tokenize time string and store it in 'tm' struct
+    tm1.tm_hour = atoi(strtok(file_time, ":"));
+    tm1.tm_min = atoi(strtok(NULL, ":"));
+    tm1.tm_sec = atoi(strtok(NULL, ":"));
+
+    // Tokenize date string and store it in 'tm' struct
+    tm1.tm_mday = atoi(strtok(file_date, "-"));
+    tm1.tm_mon = atoi(strtok(NULL, "-")) - 1;
+    tm1.tm_year = atoi(strtok(NULL, "-")) - 1900;
+    tm1.tm_isdst = -1;
+
+    // Return raw (epoch) time or '-1' on failure 
+    return mktime(&tm1);
+}
+
+/**
+ * @brief A simple function to compare the time and date of the logs,
+ *  with the current system time. If they are less than 20 minutes apart,
+ *  '1'=true is returned. 
+ * 
+ * @param file_date The date of the log entry
+ * @param file_time The time of the log entry
+ * @return int '1' => less than 20 minutes 
+ *              '0' => more than 20 minutes
+ */
+int current_time_compare(char * file_date, char * file_time){
+    // File created the last 'minute_diff' minutes
+    const int minute_diff = 20;
+
+    // Get current time 
+    time_t curr_time = time(NULL);
+
+    // Get the raw time from log entry
+    time_t file_raw_tm = get_raw_dateTime(file_date, file_time);
+
+    // Error handling
+    if(file_raw_tm == -1){
+        fprintf(stderr, "Error with time, errno: \n%s!\n", strerror(errno));
+        exit(EXIT_FAILURE);
+    }
+
+    // Check the age of the files
+    if(curr_time - file_raw_tm <= minute_diff*60)
+        return 1;
+    return 0;
+}
 
 void
 usage(void)
