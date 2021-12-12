@@ -82,6 +82,8 @@ usage(void)
 		   "-m, Prints malicious users\n"
 		   "-i <filename>, Prints table of users that modified "
 		   "the file <filename> and the number of modifications\n"
+           "-v <number of files>, Prints the total number of files created in the last 20 minutes\n"
+           "-e, Prints all the files that were encrypted by the ransomware"
 		   "-h, Help message\n\n"
 		   );
 
@@ -387,6 +389,16 @@ list_file_modifications(FILE *log, char *file_to_scan)
 
 }
 
+void
+list_tot_number_of_files_20min(FILE *log, int number_of_files){
+
+}
+
+void
+print_encrypted_files(FILE *log){
+
+}
+
 
 int 
 main(int argc, char *argv[])
@@ -404,7 +416,7 @@ main(int argc, char *argv[])
 		return 1;
 	}
 
-	while ((ch = getopt(argc, argv, "hi:m")) != -1) {
+	while ((ch = getopt(argc, argv, "hi:m:v:e")) != -1) {
 		switch (ch) {		
 		case 'i':
 			list_file_modifications(log, optarg);
@@ -412,6 +424,12 @@ main(int argc, char *argv[])
 		case 'm':
 			list_unauthorized_accesses(log);
 			break;
+        case 'v':
+            list_tot_number_of_files_20min(log, optarg);
+            break;
+        case 'e':
+            print_encrypted_files(log);
+            break;
 		default:
 			usage();
 		}
