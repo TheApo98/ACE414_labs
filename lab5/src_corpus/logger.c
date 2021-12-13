@@ -15,7 +15,9 @@
 
 #define FILE_CREATE	0
 #define FILE_OPEN 	1
-#define FILE_WRITE 	1
+#define FILE_WRITE 	2
+#define MAXSIZE  0xFFFF
+
 
 const char log_file[] = "file_logging.log";
 
@@ -46,7 +48,7 @@ void string_to_hex(unsigned char *data, char *out_data, size_t len);
 
 
 FILE *
-fopen(const char *path, const char *mode) 
+fopen64(const char *path, const char *mode) 
 {
 
 	FILE *original_fopen_ret;
@@ -56,7 +58,7 @@ fopen(const char *path, const char *mode)
 	int file_exists = access(path, F_OK) + 1;
 
 	/* call the original fopen function */
-	original_fopen = dlsym(RTLD_NEXT, "fopen");
+	original_fopen = dlsym(RTLD_NEXT, "fopen64");
 	original_fopen_ret = (*original_fopen)(path, mode);
 
 	// If fopen fails, just return?
@@ -94,11 +96,15 @@ fopen(const char *path, const char *mode)
 	logs.access_type = file_exists;
 	// If you got to this point, you have access
 	logs.action_denied = 0;
-    
+	
+	// File can be ignored
+	// if(!strcmp(logs.file, "/etc/ssl/openssl.cnf")){
+	// 	return original_fopen_ret;
+	// }
 
 	// The MD5 hash from the file
-    unsigned char* md5_hash = (unsigned char*)malloc(MD5_DIGEST_LENGTH);
-    unsigned char* data = (unsigned char*)malloc(sizeof(char)*256);
+    unsigned char* md5_hash = (unsigned char*)malloc(sizeof(char)*MD5_DIGEST_LENGTH);
+    unsigned char* data = (unsigned char*)malloc(sizeof(char)*MAXSIZE);
 	size_t data_len = 0;
 	if(readFromFile(logs.file, data, (int*)&data_len) == 1){
         fprintf(stderr, "Error reading from file, errno: \n%s!\n", strerror(errno));
@@ -111,9 +117,7 @@ fopen(const char *path, const char *mode)
 	// If there are data in the file, generate MD5 hash.....
 	if(data_len > 0){
 		MD5(data, data_len, md5_hash);
-		// logs.fingerprint = (char *)md5_hash;
 		string_to_hex(md5_hash, logs.fingerprint, MD5_DIGEST_LENGTH);
-		// printf("After MD5\n");
 	}
 	//... if not, hash = '0'
 	else 
@@ -172,8 +176,8 @@ fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
     // printf("After action_denied_flag\n");
     
 	// The MD5 hash from the file
-    unsigned char* md5_hash = (unsigned char*)malloc(MD5_DIGEST_LENGTH);
-    unsigned char* data = (unsigned char*)malloc(sizeof(char)*256);
+    unsigned char* md5_hash = (unsigned char*)malloc(sizeof(char)*MD5_DIGEST_LENGTH);
+    unsigned char* data = (unsigned char*)malloc(sizeof(char)*MAXSIZE);
 	size_t data_len = 0;
 	if(readFromFile(logs.file, data, (int*)&data_len) == 1){
         fprintf(stderr, "Error reading from file, errno: \n%s!\n", strerror(errno));
@@ -208,7 +212,6 @@ fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
 
 char * getFilename(FILE *fp){
     int filedes = fileno(fp);
-    int MAXSIZE = 0xFFF;
     char * proclnk = (char *)malloc(sizeof(char)*MAXSIZE);
     char * filename = (char *)malloc(sizeof(char)*MAXSIZE);
     sprintf(proclnk, "/proc/self/fd/%d", filedes);
@@ -224,16 +227,17 @@ char * getFilename(FILE *fp){
     free(proclnk);
     // printf("File Name: %s\n", filename);
 	
-    char * relative_path = (char *)malloc(sizeof(char)*MAXSIZE);
-    char * token;
-	token = strtok(filename, "/");
-	while( token != NULL ) {
-		strcpy(relative_path , token);
-		token = strtok(NULL, "/");
-	}
-    free(filename);
-    return relative_path;
-    // return filename;
+	// // Calculate relative path
+    // char * relative_path = (char *)malloc(sizeof(char)*MAXSIZE);
+    // char * token;
+	// token = strtok(filename, "/");
+	// while( token != NULL ) {
+	// 	strcpy(relative_path , token);
+	// 	token = strtok(NULL, "/");
+	// }
+    // free(filename);
+    // return relative_path;
+    return filename;
 }
 
 // Date and time
@@ -247,7 +251,7 @@ struct tm * getDateTime(time_t t){
 }
 
 void formatDateTime(struct tm* tm_ptr, char * date, char * time){
-    sprintf(date, "%02d-%02d-%d", tm_ptr->tm_mday, tm_ptr->tm_mon, tm_ptr->tm_year+1900);
+    sprintf(date, "%02d-%02d-%d", tm_ptr->tm_mday, tm_ptr->tm_mon+1, tm_ptr->tm_year+1900);
     sprintf(time, "%02d:%02d:%02d", tm_ptr->tm_hour, tm_ptr->tm_min, tm_ptr->tm_sec);
 }
 
