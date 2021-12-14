@@ -9,6 +9,8 @@
 #include <openssl/md5.h>
 #include <time.h>
 
+#define MAXSIZE  0xFFFF
+
 struct entry {
 
 	int uid; /* user id (positive integer) */
@@ -113,20 +115,16 @@ time_t get_raw_dateTime(char* file_date, char* file_time){
  *  with the current system time. If they are less than 20 minutes apart,
  *  '1'=true is returned. 
  * 
- * @param file_date The date of the log entry
- * @param file_time The time of the log entry
+ * @param file_raw_tm The epoch (raw) time of the log entry
  * @return int '1' => less than 20 minutes 
  *              '0' => more than 20 minutes
  */
-int current_time_compare(char * file_date, char * file_time){
+int current_time_compare(time_t file_raw_tm){
     // File created the last 'minute_diff' minutes
     const int minute_diff = 20;
 
     // Get current time 
     time_t curr_time = time(NULL);
-
-    // Get the raw time from log entry
-    time_t file_raw_tm = get_raw_dateTime(file_date, file_time);
 
     // Error handling
     if(file_raw_tm == -1){
@@ -152,7 +150,7 @@ usage(void)
 		   "-i <filename>, Prints table of users that modified "
 		   "the file <filename> and the number of modifications\n"
            "-v <number of files>, Prints the total number of files created in the last 20 minutes\n"
-           "-e, Prints all the files that were encrypted by the ransomware"
+           "-e, Prints all the files that were encrypted by the ransomware\n"
 		   "-h, Help message\n\n"
 		   );
 
@@ -177,7 +175,7 @@ list_unauthorized_accesses(FILE *log)
     //     exit(EXIT_FAILURE);
     // }
 	
-	struct entry *logs = (struct entry *)malloc(sizeof(struct entry)*1000);
+	struct entry *logs = (struct entry *)malloc(sizeof(struct entry)*MAXSIZE);
 	// if(getline(&data, &data_len, log) == 0){
 	// 	fprintf(stderr, "Error!!! %s.\n", strerror(errno));
     //     exit(EXIT_FAILURE);
@@ -326,7 +324,7 @@ list_file_modifications(FILE *log, char *file_to_scan)
     char* data = (unsigned char*)malloc(sizeof(char)*256);
 	size_t data_len = 0;
 	
-	struct entry *logs = (struct entry *)malloc(sizeof(struct entry)*1000);
+	struct entry *logs = (struct entry *)malloc(sizeof(struct entry)*MAXSIZE);
 
     int i = 0;
     int res = 0;
@@ -461,6 +459,103 @@ list_file_modifications(FILE *log, char *file_to_scan)
 void
 list_tot_number_of_files_20min(FILE *log, int number_of_files){
 
+    // To temporarily store the entries from the log file
+    char* data = (unsigned char*)malloc(sizeof(char)*256);
+	// Size of that data
+    size_t data_len = 0;
+	
+    // An array of structs to store each entry (up to 65535 logs)
+	struct entry *logs = (struct entry *)malloc(sizeof(struct entry)*MAXSIZE);
+
+    int i = 0;
+    int res = 0;
+
+    // Create an array for unique files (lets call it 'list')
+    char ** items = (char**)malloc(sizeof(char*) * MAXSIZE);
+    // The size of that array
+    int items_len = 0;
+    // The file exists more than once
+    int exists = 0;
+
+	// Discard first line
+    if((res = getline(&data, &data_len, log)) == -1) return; 
+
+    // Allocate memory for date and time strings
+    char* date = (unsigned char*)malloc(sizeof(char)*20);
+    char* time = (unsigned char*)malloc(sizeof(char)*20);
+
+    // Read logs from file line-by-line and store the in struct array
+    while ((res = getline(&data, &data_len, log)) != -1) 
+    {
+        logs[i].file = (char*)malloc(sizeof(char)*100);        
+        logs[i].fingerprint = (char*)malloc(sizeof(char)*MD5_DIGEST_LENGTH*2);        
+        logs[i].uid = atoi(strtok(data, "|"));
+        strcpy(logs[i].file, strtok(NULL, "|"));  
+        // printf("Date: %s, Time: %s\n", date, time);
+        strcpy(date, strtok(NULL, "|"));
+        strcpy(time, strtok(NULL, "|"));
+        // printf("Date: %s, Time: %s\n", date, time);
+        // printf("%ld\n", logs[i].time);
+        logs[i].access_type = atoi(strtok(NULL, "|"));
+        logs[i].action_denied = atoi(strtok(NULL, "|"));
+        strcpy(logs[i].fingerprint, strtok(NULL, "|"));
+
+        // Unformat date and time for easier comparison
+        logs[i].time = get_raw_dateTime(date, time);        
+
+
+        // Find unique files
+        // We care for files created less than 20 minutes ago....
+        // ... created meaning access_type=0
+        if(current_time_compare(logs[i].time) == 1 && logs[i].access_type == 0){
+            // If the list is empty...
+            if(items_len == 0){
+                // ... add a file
+                items[items_len] = logs[i].file;
+                /// And increase the size
+                items_len++;
+            }
+            // If it's not empty....
+            else {
+                // ....compare the file[i] to the files in the list
+                for(int j=0; j<items_len; j++){
+                    exists |= (strcmp(items[j], logs[i].file) == 0);
+                }
+                // If the file is unique (not present in the list)...
+                if(exists != 1){
+                    // ...add the file
+                    items[items_len] = logs[i].file;
+                    // Increase list size
+                    items_len++;
+                }
+                // Restore value for next iteration
+                exists = 0;
+            }
+        }
+        
+        i++;
+
+    }
+
+    // Get the size of the struct array
+    int logs_len = i;
+
+    if(items_len >= number_of_files){
+        printf("Files created less than 20 minutes ago: %d\n", items_len);
+        for (i = 0; i < items_len; i++) {
+            printf("%s\n", items[i]);
+        }
+    }
+    else{
+        printf("Found less than %d files\n", number_of_files);
+    }
+    
+    free(data);
+    free(logs);
+    free(items);
+    // free(date);
+    // free(time);
+    
 }
 
 void
@@ -485,7 +580,7 @@ main(int argc, char *argv[])
 		return 1;
 	}
 
-	while ((ch = getopt(argc, argv, "hi:m:v:e")) != -1) {
+	while ((ch = getopt(argc, argv, "i:v:hem")) != -1) {
 		switch (ch) {		
 		case 'i':
 			list_file_modifications(log, optarg);
@@ -494,7 +589,7 @@ main(int argc, char *argv[])
 			list_unauthorized_accesses(log);
 			break;
         case 'v':
-            list_tot_number_of_files_20min(log, optarg);
+            list_tot_number_of_files_20min(log, atoi(optarg));
             break;
         case 'e':
             print_encrypted_files(log);
