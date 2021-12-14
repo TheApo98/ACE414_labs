@@ -491,11 +491,8 @@ list_tot_number_of_files_20min(FILE *log, int number_of_files){
         logs[i].fingerprint = (char*)malloc(sizeof(char)*MD5_DIGEST_LENGTH*2);        
         logs[i].uid = atoi(strtok(data, "|"));
         strcpy(logs[i].file, strtok(NULL, "|"));  
-        // printf("Date: %s, Time: %s\n", date, time);
         strcpy(date, strtok(NULL, "|"));
         strcpy(time, strtok(NULL, "|"));
-        // printf("Date: %s, Time: %s\n", date, time);
-        // printf("%ld\n", logs[i].time);
         logs[i].access_type = atoi(strtok(NULL, "|"));
         logs[i].action_denied = atoi(strtok(NULL, "|"));
         strcpy(logs[i].fingerprint, strtok(NULL, "|"));
@@ -553,14 +550,102 @@ list_tot_number_of_files_20min(FILE *log, int number_of_files){
     free(data);
     free(logs);
     free(items);
-    // free(date);
-    // free(time);
+    free(date);
+    free(time);
     
 }
 
 void
 print_encrypted_files(FILE *log){
+    // To temporarily store the entries from the log file
+    char* data = (unsigned char*)malloc(sizeof(char)*256);
+	// Size of that data
+    size_t data_len = 0;
+	
+    // An array of structs to store each entry (up to 65535 logs)
+	struct entry *logs = (struct entry *)malloc(sizeof(struct entry)*MAXSIZE);
 
+    int i = 0;
+    int res = 0;
+
+    // Create an array for unique files (lets call it 'list')
+    char ** items = (char**)malloc(sizeof(char*) * MAXSIZE);
+    // The size of that array
+    int items_len = 0;
+    // The file exists more than once
+    int exists = 0;
+
+	// Discard first line
+    if((res = getline(&data, &data_len, log)) == -1) return; 
+
+    // Allocate memory for date and time strings
+    char* date = (unsigned char*)malloc(sizeof(char)*20);
+    char* time = (unsigned char*)malloc(sizeof(char)*20);
+
+    // Read logs from file line-by-line and store the in struct array
+    while ((res = getline(&data, &data_len, log)) != -1) 
+    {
+        logs[i].file = (char*)malloc(sizeof(char)*100);        
+        logs[i].fingerprint = (char*)malloc(sizeof(char)*MD5_DIGEST_LENGTH*2);        
+        logs[i].uid = atoi(strtok(data, "|"));
+        strcpy(logs[i].file, strtok(NULL, "|"));  
+        strcpy(date, strtok(NULL, "|"));
+        strcpy(time, strtok(NULL, "|"));
+        logs[i].access_type = atoi(strtok(NULL, "|"));
+        logs[i].action_denied = atoi(strtok(NULL, "|"));
+        strcpy(logs[i].fingerprint, strtok(NULL, "|"));
+
+        // Unformat date and time for easier comparison
+        logs[i].time = get_raw_dateTime(date, time);        
+
+
+        // Find unique files
+        // We care for files containing the ".encrypt" substring....
+        // ... created meaning access_type=0
+        if(strstr(logs[i].file, ".encrypt") != NULL && logs[i].access_type == 0){
+            // If the list is empty...
+            if(items_len == 0){
+                // ... add a file
+                items[items_len] = logs[i].file;
+                /// And increase the size
+                items_len++;
+            }
+            // If it's not empty....
+            else {
+                // ....compare the file[i] to the files in the list
+                for(int j=0; j<items_len; j++){
+                    exists |= (strcmp(items[j], logs[i].file) == 0);
+                }
+                // If the file is unique (not present in the list)...
+                if(exists != 1){
+                    // ...add the file
+                    items[items_len] = logs[i].file;
+                    // Increase list size
+                    items_len++;
+                }
+                // Restore value for next iteration
+                exists = 0;
+            }
+        }
+        
+        i++;
+
+    }
+
+    // Get the size of the struct array
+    int logs_len = i;
+
+    printf("Files affected be ransomware: %d\n", items_len);
+    for (i = 0; i < items_len; i++) {
+        printf("%s\n", items[i]);
+    }
+    
+    free(data);
+    free(logs);
+    free(items);
+    free(date);
+    free(time);
+    
 }
 
 
