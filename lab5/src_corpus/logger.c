@@ -16,6 +16,9 @@
 #define FILE_CREATE	0
 #define FILE_OPEN 	1
 #define FILE_WRITE 	2
+
+// To allocate a generous amount of memory
+// do be a cheapskate
 #define MAXSIZE  0xFFFF
 
 
