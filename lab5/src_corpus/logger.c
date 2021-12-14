@@ -18,7 +18,7 @@
 #define FILE_WRITE 	2
 
 // To allocate a generous amount of memory
-// do be a cheapskate
+// don't be a cheapskate
 #define MAXSIZE  0xFFFF
 
 
