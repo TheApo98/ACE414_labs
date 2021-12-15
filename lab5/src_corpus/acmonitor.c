@@ -539,8 +539,13 @@ list_tot_number_of_files_20min(FILE *log, int number_of_files){
 
     if(items_len >= number_of_files){
         printf("Files created less than 20 minutes ago: %d\n", items_len);
-        for (i = 0; i < items_len; i++) {
-            printf("%s\n", items[i]);
+        printf("Show their filenames? (y-n) ");
+        char choice = 'n';
+        scanf("%c", &choice);
+        if(choice == 'y'){
+            for (i = 0; i < items_len; i++) {
+                printf("%s\n", items[i]);
+            }
         }
     }
     else{
@@ -636,10 +641,15 @@ print_encrypted_files(FILE *log){
     int logs_len = i;
 
     printf("Files affected by ransomware: %d\n", items_len);
-    for (i = 0; i < items_len; i++) {
-        printf("%s\n", items[i]);
+    printf("Show their filenames? (y-n) ");
+    char choice = 'n';
+    scanf("%c", &choice);
+    if(choice == 'y'){
+        for (i = 0; i < items_len; i++) {
+            printf("%s\n", items[i]);
+        }
     }
-    
+
     free(data);
     free(logs);
     free(items);
