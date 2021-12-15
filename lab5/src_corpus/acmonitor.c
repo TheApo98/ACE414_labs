@@ -635,7 +635,7 @@ print_encrypted_files(FILE *log){
     // Get the size of the struct array
     int logs_len = i;
 
-    printf("Files affected be ransomware: %d\n", items_len);
+    printf("Files affected by ransomware: %d\n", items_len);
     for (i = 0; i < items_len; i++) {
         printf("%s\n", items[i]);
     }
