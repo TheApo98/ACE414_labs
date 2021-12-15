@@ -1,76 +1,43 @@
 #include <stdio.h>
 #include <string.h>
-#include <sys/stat.h>
 #include <errno.h>
 #include <stdlib.h>       
 #include <unistd.h>
 
 
-int main() 
+int main(int argc, char *argv[]) 
 {
 	int i;
 	size_t bytes;
 	FILE *file;
-	char filenames[10][7] = {"file_0", "file_1", 
-			"file_2", "file_3", "file_4",
-			"file_5", "file_6", "file_7", 		
-			"file_8", "file_9"};
 
+	/* A simple program to create X amount of files */
+	/* Usage: ./test_aclog <number_of_files> <directory> <filename_format> */  
 
-	/* example source code */
+	// Reserve space for strings
+	char *filename = (char*)malloc(sizeof(char)*256);
+	char *directory = (char*)malloc(sizeof(char)*256);
+	char *filename_format = (char*)malloc(sizeof(char)*256);
 
-	for (i = 0; i < 10; i++) {
+	int number_of_files = atoi(argv[1]);
+	strcpy(directory, argv[2]);
+	strcpy(filename_format, argv[3]);
 
-		file = fopen(filenames[i], "w+");
-		if (file == NULL) 
+	for (i = 0; i < number_of_files; i++)
+	{
+		// pass the path to the filename variable
+		sprintf(filename, "%s/%s%d.txt", directory, filename_format, i);
+		// printf("File: %s\n", filename);
+		file = fopen(filename, "w");
+		if (file == NULL) {
 			printf("fopen error\n");
+			printf("%s!\n\n", strerror(errno));
+		}
 		else {
-			bytes = fwrite(filenames[i], strlen(filenames[i]), 1, file);
+			// Add the path as content in the file
+			bytes = fwrite(filename, 1, strlen(filename), file);
 			fclose(file);
 		}
-
 	}
-	
-	struct stat stats;
-	printf("Cur UID: %d\n", getuid());
-	for (i = 0; i < 10; i++) {
-		chmod(filenames[i],  S_IRUSR|S_IROTH|S_IRGRP );	// -r--r--r-
-		file = fopen(filenames[i], "w+");
-		if (file == NULL) 
-			printf("fopen error\n");
-		else {
-			bytes = fwrite(filenames[i], strlen(filenames[i]), 1, file);
-			fclose(file);
-		}
-
-	}
-
-	for (i = 0; i < 10; i++) {
-		chmod(filenames[i],  S_IWUSR|S_IWOTH|S_IWGRP | S_IRUSR|S_IROTH|S_IRGRP );	// wr-wr-wr-
-		file = fopen(filenames[i], "r");
-		if (file == NULL) 
-			printf("fopen error\n");
-		else {
-			bytes = fwrite(filenames[i], strlen(filenames[i]), 1, file);
-			fclose(file);
-		}
-
-	}
-
-	for (i = 0; i < 10; i++) {
-		chmod(filenames[i],  S_IWUSR|S_IWOTH|S_IWGRP | S_IRUSR|S_IROTH|S_IRGRP );	// wr-wr-wr-
-		file = fopen(filenames[i], "a+");
-		if (file == NULL) 
-			printf("fopen error\n");
-		else {
-			bytes = fwrite(filenames[i], strlen(filenames[i]), 1, file);
-			fclose(file);
-		}
-
-	}
-
-
-
-
 
 }
