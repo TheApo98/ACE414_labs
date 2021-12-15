@@ -48,10 +48,14 @@ char * getFilename(FILE *fp);
 struct tm * getDateTime(time_t t);
 void string_to_hex(unsigned char *data, char *out_data, size_t len);
 
+FILE *
+fopen64(const char *path, const char *mode) {
+	return fopen(path, mode);
+}
 
 
 FILE *
-fopen64(const char *path, const char *mode) 
+fopen(const char *path, const char *mode) 
 {
 
 	FILE *original_fopen_ret;
@@ -61,7 +65,7 @@ fopen64(const char *path, const char *mode)
 	int file_exists = access(path, F_OK) + 1;
 
 	/* call the original fopen function */
-	original_fopen = dlsym(RTLD_NEXT, "fopen64");
+	original_fopen = dlsym(RTLD_NEXT, "fopen");
 	original_fopen_ret = (*original_fopen)(path, mode);
 
 	// If fopen fails, just return?
