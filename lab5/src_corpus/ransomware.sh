@@ -106,7 +106,7 @@ case "${mode}" in
 esac
 
 echo
-ls $directory
+# ls $directory
 
 
 
