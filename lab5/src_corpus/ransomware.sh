@@ -67,7 +67,9 @@ case "${mode}" in
             ./test_aclog $no_of_files $directory $fname_format
         else
             echo "File 'test_aclog' doesn't exist or is not executable"
+            exit -1
         fi
+        echo -e "Files created successfully"
         ;;
     1)
         for ((i = 0; i < $no_of_files; i++)); do
@@ -81,6 +83,7 @@ case "${mode}" in
                 openssl enc -aes-256-ecb -pbkdf2 -in $directory/$cur_file -out $directory/$cur_file.encrypt -k $password #&> /dev/null
                 # Delete the original files
                 rm -rf $directory/$cur_file
+                printf "\rEncrypting file $((i+1))/$no_of_files"
             fi
         done
         ;;
@@ -96,6 +99,7 @@ case "${mode}" in
                 openssl aes-256-ecb -pbkdf2 -in $directory/$cur_file.encrypt -out $directory/$cur_file -d -k $password #&> /dev/null
                 # Delete the encypted files
                 rm -rf $directory/$cur_file.encrypt
+                printf "\rDecrypting file $((i+1))/$no_of_files"
             fi
         done        
         ;;
