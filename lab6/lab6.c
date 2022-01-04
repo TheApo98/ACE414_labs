@@ -7,9 +7,11 @@
 #include <netinet/in.h>
 #include <net/ethernet.h>
 
-int packet_count = 0;
-int tcp_packet_count = 0;
-int udp_packet_count = 0;
+u_int packet_count = 0;
+u_int tcp_packet_count = 0;
+u_int udp_packet_count = 0;
+u_int tcp_packet_bytes = 0;
+u_int udp_packet_bytes = 0;
 
 void print_hex(unsigned char *data, size_t len);
 void print_string(unsigned char *data, size_t len);
@@ -83,6 +85,55 @@ void tcp_packet_info(const u_char *packet, u_int32_t cap_packet_len, int ip_head
     */
 }
 
+void udp_packet_info(const u_char *packet, u_int32_t cap_packet_len, int ip_header_length){
+    // Header pointers
+    const u_char *udp_header;
+    const u_char *payload;
+    
+    // Header lengths
+    int ethernet_header_length = 14; /* Doesn't change */
+    int payload_length;
+    int udp_header_length = 8;      /* Doesn't change */
+    int udp_total_length;
+
+    // Point to the start of the TCP header
+    udp_header = packet + ethernet_header_length + ip_header_length;
+    // the 5th-8th bytes are the UDP total length (header + payload)
+    const u_char * udp_len_pointer = udp_header + 4;
+    udp_total_length = (*udp_len_pointer << 8) | (*(udp_len_pointer + 1));
+    printf("UDP total length in bytes: %d\n", udp_total_length);
+    printf("UDP header length in bytes: %d\n", udp_header_length);
+
+    // Find source and dest ports 
+    const u_char * source_port = udp_header; 
+    const u_char * dest_port = udp_header + 2; 
+    int src_port = (*source_port << 8) | (*(source_port + 1)); 
+    int dst_port = (*dest_port << 8) | (*(dest_port + 1)); 
+    printf("Source port: %d\n", src_port);
+    printf("Destination port: %d\n", dst_port);
+
+    /* Add up all the header sizes to find the payload offset */
+    int total_headers_size = ethernet_header_length + ip_header_length + udp_header_length;
+    printf("Size of all headers combined: %d bytes\n", total_headers_size);
+    payload_length = cap_packet_len - total_headers_size;
+    printf("Payload size: %d bytes\n", payload_length);
+    payload = packet + total_headers_size;
+    // printf("Memory address where payload begins: %p\n\n", payload);
+
+    /* Print payload in ASCII */
+    /*  
+    if (payload_length > 0) {
+        const u_char *temp_pointer = payload;
+        int byte_count = 0;
+        while (byte_count++ < payload_length) {
+            printf("%c", *temp_pointer);
+            temp_pointer++;
+        }
+        printf("\n");
+    }
+    */
+}
+
 // Callback routine called by pcap_loop()
 void my_packet_handler(u_char *args, const struct pcap_pkthdr *header, const u_char *packet)
 {
@@ -112,7 +163,7 @@ void my_packet_handler(u_char *args, const struct pcap_pkthdr *header, const u_c
     ip_header_length = ((*ip_header) & 0x0F);
     // ...multiplied by 4
     ip_header_length = ip_header_length * 4;
-    printf("IP header length (IHL) in bytes: %d\n", ip_header_length);
+    printf("IP header length in bytes: %d\n", ip_header_length);
 
     // Find source and dest ip addresses 
     const u_char * source_ip = ip_header + ip_header_length - 4*2; 
@@ -122,16 +173,18 @@ void my_packet_handler(u_char *args, const struct pcap_pkthdr *header, const u_c
     printf("Destination ip: ");
     print_ip(dest_ip);
 
-
+    // Check the protocol
     u_char protocol = *(ip_header + 9);
     if (protocol == IPPROTO_TCP) {
         tcp_packet_count++;
+        tcp_packet_bytes+=header->caplen;
         tcp_packet_info(packet, header->caplen, ip_header_length);
         // printf("Not a TCP packet. Skipping...\n\n");
     }
     else if (protocol == IPPROTO_UDP) {
         udp_packet_count++;
-        // tcp_packet_info(packet, header->caplen, ip_header_length);
+        udp_packet_bytes+=header->caplen;
+        udp_packet_info(packet, header->caplen, ip_header_length);
         // printf("Not a TCP packet. Skipping...\n\n");
     }
 
@@ -152,9 +205,12 @@ int pcap_file_read(char * filename){
 
     pcap_loop(handle, 0, my_packet_handler, NULL);
 
+    printf("**** Stats ****\n");
     printf("Total packets: %d\n", packet_count);
     printf("Total TCP packets: %d\n", tcp_packet_count);
     printf("Total UDP packets: %d\n", udp_packet_count);
+    printf("Total bytes of TCP packets: %d\n", tcp_packet_bytes);
+    printf("Total bytes of UDP packets: %d\n", udp_packet_bytes);
     return 0;
 }
 
