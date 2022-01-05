@@ -67,7 +67,7 @@ usage(void)
 	printf(
 	       "\n"
 	       "usage:\n"
-	       "\t./lab6 \n"
+	       "\t./monitor \n"
 		   "Options:\n"
 		   "-r <filename>, Packet capture file name\n"
 		   "-h, Help message\n\n"
@@ -260,7 +260,7 @@ void my_packet_handler(u_char *args, const struct pcap_pkthdr *header, const u_c
     pac->total_len = header->caplen;
 
     // Set to '0' at first
-    pac->is_retransmitted = 1;
+    pac->is_retransmitted = 0;
 
     ip_packet_info(packet, pac);
 
@@ -280,8 +280,8 @@ void my_packet_handler(u_char *args, const struct pcap_pkthdr *header, const u_c
     // Generate the flow
     if(pac->payload_len == 0){
         struct network_flow *flow_node = new_net_flow(flow_list, pac);
+        flow_list = add_net_flow(flow_list, flow_node);
         if(!net_flow_exists(flow_list, flow_node)){
-            flow_list = add_net_flow(flow_list, flow_node);
             // printf("\t\tIn here\n");
         }
     }
