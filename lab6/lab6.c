@@ -15,6 +15,7 @@ u_int udp_packet_bytes = 0;
 
 struct packet
 {
+    int packet_no;
     u_char * source_ip;
     u_char * dest_ip;
 
@@ -23,7 +24,12 @@ struct packet
 
     uint8_t protocol;
 
-    int payload_len;    
+    int total_len;
+    int ip_header_len;    
+    int tcpUdp_header_len;    
+    int payload_len;
+
+    int is_retransmitted;
 };
 
 struct network_flow
@@ -61,123 +67,33 @@ usage(void)
 	exit(1);
 }
 
-// void print_packet_info(const u_char *packet, struct pcap_pkthdr packet_header) {
-//     printf("Packet capture length: %d\n", packet_header.caplen);
-//     printf("Packet total length %d\n", packet_header.len);
-// }
+void print_packet_info(struct packet *p) {
+    printf("Packet no: %d\n", p->packet_no);
+    printf("Packet total captured length %d\n", p->total_len);
+    printf("IP header length in bytes: %d\n", p->ip_header_len);
 
-void tcp_packet_info(const u_char *packet, u_int32_t cap_packet_len, int ip_header_length){
-    // Header pointers
-    const u_char *tcp_header;
-    const u_char *payload;
-    
-    // Header lengths
-    int ethernet_header_length = 14; /* Doesn't change */
-    int payload_length;
-    int tcp_header_length;
+    printf("Source ip: ");
+    print_ip(p->source_ip);
+    printf("Destination ip: ");
+    print_ip(p->dest_ip);
 
-    // Point to the start of the TCP header
-    tcp_header = packet + ethernet_header_length + ip_header_length;
-    // first half of 13th byte is the header length... 
-    tcp_header_length = ((*(tcp_header + 12)) & 0xF0) >> 4;
-    // ...multiplied by 4
-    tcp_header_length = tcp_header_length * 4;
-    printf("TCP header length in bytes: %d\n", tcp_header_length);
+    if(p->protocol == IPPROTO_TCP)
+        printf("TCP header length in bytes: %d\n", p->tcpUdp_header_len);
+    else
+        printf("UDP header length in bytes: %d\n", p->tcpUdp_header_len);
 
-    // Find source and dest ports 
-    const u_char * source_port = tcp_header; 
-    const u_char * dest_port = tcp_header + 2; 
-    uint16_t src_port = (*source_port << 8) | (*(source_port + 1)); 
-    uint16_t dst_port = (*dest_port << 8) | (*(dest_port + 1)); 
-    printf("Source port: %d\n", src_port);
-    printf("Destination port: %d\n", dst_port);
+    printf("Source port: %d\n", p->src_port);
+    printf("Destination port: %d\n", p->dst_port);
+    printf("Payload length in bytes: %d\n", p->payload_len);
 
-    /* Add up all the header sizes to find the payload offset */
-    int total_headers_size = ethernet_header_length + ip_header_length + tcp_header_length;
-    printf("Size of all headers combined: %d bytes\n", total_headers_size);
-    payload_length = cap_packet_len - total_headers_size;
-    printf("Payload size: %d bytes\n", payload_length);
-    payload = packet + total_headers_size;
-    // printf("Memory address where payload begins: %p\n\n", payload);
+    printf("Is retransmission? ");
+    p->is_retransmitted ? printf("Yes\n") : printf("No\n");
 
-    /* Print payload in ASCII */
-    /*  
-    if (payload_length > 0) {
-        const u_char *temp_pointer = payload;
-        int byte_count = 0;
-        while (byte_count++ < payload_length) {
-            printf("%c", *temp_pointer);
-            temp_pointer++;
-        }
-        printf("\n");
-    }
-    */
+    printf("\n");
+
 }
 
-void udp_packet_info(const u_char *packet, u_int32_t cap_packet_len, int ip_header_length){
-    // Header pointers
-    const u_char *udp_header;
-    const u_char *payload;
-    
-    // Header lengths
-    int ethernet_header_length = 14; /* Doesn't change */
-    int payload_length;
-    int udp_header_length = 8;      /* Doesn't change */
-    int udp_total_length;
-
-    // Point to the start of the TCP header
-    udp_header = packet + ethernet_header_length + ip_header_length;
-    // the 5th-8th bytes are the UDP total length (header + payload)
-    const u_char * udp_len_pointer = udp_header + 4;
-    udp_total_length = (*udp_len_pointer << 8) | (*(udp_len_pointer + 1));
-    printf("UDP total length in bytes: %d\n", udp_total_length);
-    printf("UDP header length in bytes: %d\n", udp_header_length);
-
-    // Find source and dest ports 
-    const u_char * source_port = udp_header; 
-    const u_char * dest_port = udp_header + 2; 
-    uint16_t src_port = (*source_port << 8) | (*(source_port + 1)); 
-    uint16_t dst_port = (*dest_port << 8) | (*(dest_port + 1)); 
-    printf("Source port: %d\n", src_port);
-    printf("Destination port: %d\n", dst_port);
-
-    /* Add up all the header sizes to find the payload offset */
-    int total_headers_size = ethernet_header_length + ip_header_length + udp_header_length;
-    printf("Size of all headers combined: %d bytes\n", total_headers_size);
-    payload_length = cap_packet_len - total_headers_size;
-    printf("Payload size: %d bytes\n", payload_length);
-    payload = packet + total_headers_size;
-    // printf("Memory address where payload begins: %p\n\n", payload);
-
-    /* Print payload in ASCII */
-    /*  
-    if (payload_length > 0) {
-        const u_char *temp_pointer = payload;
-        int byte_count = 0;
-        while (byte_count++ < payload_length) {
-            printf("%c", *temp_pointer);
-            temp_pointer++;
-        }
-        printf("\n");
-    }
-    */
-}
-
-// Callback routine called by pcap_loop()
-void my_packet_handler(u_char *args, const struct pcap_pkthdr *header, const u_char *packet)
-{
-    printf("Packet: %d\n", ++packet_count);
-
-    /* First, lets make sure we have an IP packet */
-    struct ether_header *eth_header;
-    eth_header = (struct ether_header *) packet;
-    if (ntohs(eth_header->ether_type) != ETHERTYPE_IP) {
-        printf("Not an IP packet. Skipping...\n\n");
-        return;
-    }
-
-    printf("Total packet available: %d bytes\n", header->caplen);
-    printf("Expected packet size: %d bytes\n", header->len);
+void ip_packet_info(const u_char *packet, struct packet *p){
 
     /* Pointers to start point of various headers */
     const u_char *ip_header;
@@ -192,33 +108,142 @@ void my_packet_handler(u_char *args, const struct pcap_pkthdr *header, const u_c
     ip_header_length = ((*ip_header) & 0x0F);
     // ...multiplied by 4
     ip_header_length = ip_header_length * 4;
-    printf("IP header length in bytes: %d\n", ip_header_length);
+    // store to struct
+    p->ip_header_len = ip_header_length;
 
     // Find source and dest ip addresses manualy
     const u_char * source_ip = ip_header + ip_header_length - 4*2; 
     const u_char * dest_ip = ip_header + ip_header_length - 4; 
-    printf("Source ip: ");
-    print_ip(source_ip);
-    printf("Destination ip: ");
-    print_ip(dest_ip);
+    p->source_ip = strdup(source_ip);
+    p->dest_ip = strdup(dest_ip);
+
+    // Store the protocol
+    p->protocol = *(ip_header + 9);
+}
+
+void tcp_packet_info(const u_char *packet, struct packet *p){
+    // Header pointers
+    const u_char *tcp_header;
+    const u_char *payload;
+    
+    // Header lengths
+    int ethernet_header_length = 14; /* Doesn't change */
+    int ip_header_length = p->ip_header_len;
+    int tcp_header_length;
+    int payload_length;
+
+    int cap_packet_len = p->total_len;
+
+    // Point to the start of the TCP header
+    tcp_header = packet + ethernet_header_length + ip_header_length;
+    // first half of 13th byte is the header length... 
+    tcp_header_length = ((*(tcp_header + 12)) & 0xF0) >> 4;
+    // ...multiplied by 4
+    tcp_header_length = tcp_header_length * 4;
+    p->tcpUdp_header_len = tcp_header_length;
+
+    // Find source and dest ports 
+    const u_char * source_port = tcp_header; 
+    const u_char * dest_port = tcp_header + 2; 
+    uint16_t src_port = (*source_port << 8) | (*(source_port + 1)); 
+    uint16_t dst_port = (*dest_port << 8) | (*(dest_port + 1)); 
+    p->src_port = src_port;
+    p->dst_port = dst_port;
+
+    /* Add up all the header sizes to find the payload offset */
+    int total_headers_size = ethernet_header_length + ip_header_length + tcp_header_length;
+    payload_length = cap_packet_len - total_headers_size;
+    p->payload_len = payload_length;
+    // payload pointer
+    payload = packet + total_headers_size;
+
+}
+
+void udp_packet_info(const u_char *packet, struct packet *p){
+    // Header pointers
+    const u_char *udp_header;
+    const u_char *payload;
+    
+    // Header lengths
+    int ethernet_header_length = 14; /* Doesn't change */
+    int ip_header_length = p->ip_header_len;
+    int udp_header_length = 8;      /* Doesn't change */
+    int udp_total_length;
+    int payload_length;
+
+    // The total captured packet length
+    int cap_packet_len = p->total_len;
+
+    // Point to the start of the TCP header
+    udp_header = packet + ethernet_header_length + ip_header_length;
+    // the 5th-8th bytes are the UDP total length (header + payload)
+    const u_char * udp_len_pointer = udp_header + 4;
+    udp_total_length = (*udp_len_pointer << 8) | (*(udp_len_pointer + 1));
+    // Store udp header length
+    p->tcpUdp_header_len = udp_header_length;
+    // printf("UDP header length in bytes: %d\n", udp_header_length);
+
+    // Find source and dest ports 
+    const u_char * source_port = udp_header; 
+    const u_char * dest_port = udp_header + 2; 
+    uint16_t src_port = (*source_port << 8) | (*(source_port + 1)); 
+    uint16_t dst_port = (*dest_port << 8) | (*(dest_port + 1)); 
+    p->src_port = src_port;
+    p->dst_port = dst_port;
+
+    /* Add up all the header sizes to find the payload offset */
+    int total_headers_size = ethernet_header_length + ip_header_length + udp_header_length;
+    payload_length = cap_packet_len - total_headers_size;
+    // Store payload length
+    p->payload_len = payload_length;
+    // payload pointer
+    payload = packet + total_headers_size;
+
+}
+
+// Callback routine called by pcap_loop()
+void my_packet_handler(u_char *args, const struct pcap_pkthdr *header, const u_char *packet)
+{
+    // Increment counter
+    packet_count++;
+
+    // Allocate space for packet struct
+    struct packet * pac = (struct packet*)malloc(sizeof(struct packet));
+
+    /* First, lets make sure we have an IP packet */
+    struct ether_header *eth_header;
+    eth_header = (struct ether_header *) packet;
+    if (ntohs(eth_header->ether_type) != ETHERTYPE_IP) {
+        printf("Not an IP packet. Skipping...\n\n");
+        return;
+    }
+
+    // Number of the packet in the file
+    pac->packet_no = packet_count;
+    // Store lenght of captured packet
+    pac->total_len = header->caplen;
+
+    ip_packet_info(packet, pac);
 
     // Check the protocol
-    u_char protocol = *(ip_header + 9);
+    u_char protocol = pac->protocol;
     if (protocol == IPPROTO_TCP) {
         tcp_packet_count++;
         tcp_packet_bytes+=header->caplen;
-        tcp_packet_info(packet, header->caplen, ip_header_length);
-        // printf("Not a TCP packet. Skipping...\n\n");
+        tcp_packet_info(packet, pac);
     }
     else if (protocol == IPPROTO_UDP) {
         udp_packet_count++;
         udp_packet_bytes+=header->caplen;
-        udp_packet_info(packet, header->caplen, ip_header_length);
-        // printf("Not a TCP packet. Skipping...\n\n");
+        udp_packet_info(packet, pac);
     }
 
-    printf("\n");
+    print_packet_info(pac);
     
+    // Free packet memory
+    free(pac->source_ip);
+    free(pac->dest_ip);
+    free(pac);
 
     return;
 }
@@ -232,7 +257,8 @@ int pcap_file_read(char * filename){
         return 1;
     }
 
-    pcap_loop(handle, 0, my_packet_handler, NULL);
+    if(pcap_loop(handle, 0, my_packet_handler, NULL) < 0)
+        printf("Error\n");
 
     printf("**** Stats ****\n");
     printf("Total packets: %d\n", packet_count);
