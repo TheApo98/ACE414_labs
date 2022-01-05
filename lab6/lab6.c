@@ -6,12 +6,19 @@
 
 #include <netinet/in.h>
 #include <net/ethernet.h>
+#include <netdb.h>
 
+/* Global variables for stats */
 u_int packet_count = 0;
 u_int tcp_packet_count = 0;
 u_int udp_packet_count = 0;
 u_int tcp_packet_bytes = 0;
 u_int udp_packet_bytes = 0;
+u_int tcp_net_flow_count = 0;
+u_int udp_net_flow_count = 0;
+
+/* The list with the network flows */
+struct network_flow *flow_list = NULL;
 
 struct packet
 {
@@ -23,6 +30,8 @@ struct packet
     uint16_t dst_port;
 
     uint8_t protocol;
+
+    uint32_t seq_num;
 
     int total_len;
     int ip_header_len;    
@@ -69,6 +78,13 @@ usage(void)
 
 void print_packet_info(struct packet *p) {
     printf("Packet no: %d\n", p->packet_no);
+
+    printf("Protocol: ");
+    if(p->protocol == IPPROTO_TCP)
+        printf("TCP\n");
+    else
+        printf("UDP\n");
+
     printf("Packet total captured length %d\n", p->total_len);
     printf("IP header length in bytes: %d\n", p->ip_header_len);
 
@@ -81,13 +97,26 @@ void print_packet_info(struct packet *p) {
         printf("TCP header length in bytes: %d\n", p->tcpUdp_header_len);
     else
         printf("UDP header length in bytes: %d\n", p->tcpUdp_header_len);
-
+        
+    // printf("Sequence number: %d\n", p->seq_num);
     printf("Source port: %d\n", p->src_port);
     printf("Destination port: %d\n", p->dst_port);
     printf("Payload length in bytes: %d\n", p->payload_len);
 
     printf("Is retransmission? ");
     p->is_retransmitted ? printf("Yes\n") : printf("No\n");
+
+    struct servent *serv_src;
+    struct servent *serv_dst;
+    // For some reason this doesn't work on my computer
+    printf("High level protocol: ");
+    if((serv_src = getservbyport(p->src_port, NULL)) != NULL) 
+        printf("%s\n", serv_src->s_name);
+    else if((serv_dst = getservbyport(p->dst_port, NULL)) != NULL) 
+        printf("%s\n", serv_dst->s_name);
+    else
+        printf("N/A\n");
+
 
     printf("\n");
 
@@ -142,6 +171,13 @@ void tcp_packet_info(const u_char *packet, struct packet *p){
     tcp_header_length = tcp_header_length * 4;
     p->tcpUdp_header_len = tcp_header_length;
 
+    // Find sequence number (5th-8th bytes)
+    const u_char * seq_num_pointer = tcp_header + 4;
+    // uint16_t tmp1 = (*seq_num_pointer << 8) | (*(seq_num_pointer + 1));
+    // uint16_t tmp2 = (*(seq_num_pointer + 2) << 8) | (*(seq_num_pointer + 3));
+    // p->seq_num = tmp1 << 16 | tmp2;
+    p->seq_num = (seq_num_pointer[0] << 24 | seq_num_pointer[1] << 16 | seq_num_pointer[2] << 8 | seq_num_pointer[3]);
+
     // Find source and dest ports 
     const u_char * source_port = tcp_header; 
     const u_char * dest_port = tcp_header + 2; 
@@ -176,12 +212,12 @@ void udp_packet_info(const u_char *packet, struct packet *p){
 
     // Point to the start of the TCP header
     udp_header = packet + ethernet_header_length + ip_header_length;
-    // the 5th-8th bytes are the UDP total length (header + payload)
+    // the 5th-6th bytes are the UDP total length (header + payload)
     const u_char * udp_len_pointer = udp_header + 4;
     udp_total_length = (*udp_len_pointer << 8) | (*(udp_len_pointer + 1));
     // Store udp header length
     p->tcpUdp_header_len = udp_header_length;
-    // printf("UDP header length in bytes: %d\n", udp_header_length);
+    // printf("UDP total length in bytes: %d\n", udp_total_length);
 
     // Find source and dest ports 
     const u_char * source_port = udp_header; 
@@ -223,20 +259,35 @@ void my_packet_handler(u_char *args, const struct pcap_pkthdr *header, const u_c
     // Store lenght of captured packet
     pac->total_len = header->caplen;
 
+    // Set to '0' at first
+    pac->is_retransmitted = 1;
+
     ip_packet_info(packet, pac);
 
     // Check the protocol
     u_char protocol = pac->protocol;
     if (protocol == IPPROTO_TCP) {
         tcp_packet_count++;
-        tcp_packet_bytes+=header->caplen;
+        tcp_packet_bytes += header->caplen;
         tcp_packet_info(packet, pac);
     }
     else if (protocol == IPPROTO_UDP) {
         udp_packet_count++;
-        udp_packet_bytes+=header->caplen;
+        udp_packet_bytes += header->caplen;
         udp_packet_info(packet, pac);
     }
+
+    // Generate the flow
+    if(pac->payload_len == 0){
+        struct network_flow *flow_node = new_net_flow(flow_list, pac);
+        if(!net_flow_exists(flow_list, flow_node)){
+            flow_list = add_net_flow(flow_list, flow_node);
+            // printf("\t\tIn here\n");
+        }
+    }
+    // if(!net_flow_exists(flow_list, flow_node)){
+    //     pac->is_retransmitted = 1;
+    // }
 
     print_packet_info(pac);
     
@@ -258,7 +309,7 @@ int pcap_file_read(char * filename){
     }
 
     if(pcap_loop(handle, 0, my_packet_handler, NULL) < 0)
-        printf("Error\n");
+        printf("Error reading captured packets\n");
 
     printf("**** Stats ****\n");
     printf("Total packets: %d\n", packet_count);
@@ -266,6 +317,11 @@ int pcap_file_read(char * filename){
     printf("Total UDP packets: %d\n", udp_packet_count);
     printf("Total bytes of TCP packets: %d\n", tcp_packet_bytes);
     printf("Total bytes of UDP packets: %d\n", udp_packet_bytes);
+
+    printf("Total network flows: %d\n", tcp_net_flow_count + udp_net_flow_count);
+    printf("Total TCP network flows: %d\n", tcp_net_flow_count);
+    printf("Total UDP network flows: %d\n", udp_net_flow_count);
+
     return 0;
 }
 
@@ -324,6 +380,8 @@ struct network_flow * new_net_flow(struct network_flow *head, struct packet *p)
 struct network_flow * add_net_flow(struct network_flow *head, struct network_flow *node)
 {
     if(head == NULL){
+        // Set node as list head
+        head = node;
         return node;
     }
 
@@ -337,6 +395,12 @@ struct network_flow * add_net_flow(struct network_flow *head, struct network_flo
 
     // Add the new node at the end
     cur->next = node;
+
+    // Increment appropriate counter
+    if(node->protocol == IPPROTO_TCP)
+        tcp_net_flow_count++;
+    else
+        udp_net_flow_count++;
 
     // Return the head of the list
     return head;
