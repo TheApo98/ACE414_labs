@@ -13,9 +13,38 @@ u_int udp_packet_count = 0;
 u_int tcp_packet_bytes = 0;
 u_int udp_packet_bytes = 0;
 
+struct packet
+{
+    u_char * source_ip;
+    u_char * dest_ip;
+
+    uint16_t src_port;
+    uint16_t dst_port;
+
+    uint8_t protocol;
+
+    int payload_len;    
+};
+
+struct network_flow
+{
+    u_char * source_ip;
+    u_char * dest_ip;
+
+    uint16_t src_port;
+    uint16_t dst_port;
+
+    uint8_t protocol;
+    struct network_flow * next;
+};
+
 void print_hex(unsigned char *data, size_t len);
 void print_string(unsigned char *data, size_t len);
 void print_ip(const u_char *data);
+struct network_flow * new_net_flow(struct network_flow *head, struct packet *p);
+struct network_flow * add_net_flow(struct network_flow *head, struct network_flow *node);
+int net_flow_exists(struct network_flow *head, struct network_flow *node);
+
 
 void
 usage(void)
@@ -58,8 +87,8 @@ void tcp_packet_info(const u_char *packet, u_int32_t cap_packet_len, int ip_head
     // Find source and dest ports 
     const u_char * source_port = tcp_header; 
     const u_char * dest_port = tcp_header + 2; 
-    int src_port = (*source_port << 8) | (*(source_port + 1)); 
-    int dst_port = (*dest_port << 8) | (*(dest_port + 1)); 
+    uint16_t src_port = (*source_port << 8) | (*(source_port + 1)); 
+    uint16_t dst_port = (*dest_port << 8) | (*(dest_port + 1)); 
     printf("Source port: %d\n", src_port);
     printf("Destination port: %d\n", dst_port);
 
@@ -107,8 +136,8 @@ void udp_packet_info(const u_char *packet, u_int32_t cap_packet_len, int ip_head
     // Find source and dest ports 
     const u_char * source_port = udp_header; 
     const u_char * dest_port = udp_header + 2; 
-    int src_port = (*source_port << 8) | (*(source_port + 1)); 
-    int dst_port = (*dest_port << 8) | (*(dest_port + 1)); 
+    uint16_t src_port = (*source_port << 8) | (*(source_port + 1)); 
+    uint16_t dst_port = (*dest_port << 8) | (*(dest_port + 1)); 
     printf("Source port: %d\n", src_port);
     printf("Destination port: %d\n", dst_port);
 
@@ -137,7 +166,7 @@ void udp_packet_info(const u_char *packet, u_int32_t cap_packet_len, int ip_head
 // Callback routine called by pcap_loop()
 void my_packet_handler(u_char *args, const struct pcap_pkthdr *header, const u_char *packet)
 {
-    printf("Packet: %d\n", packet_count++);
+    printf("Packet: %d\n", ++packet_count);
 
     /* First, lets make sure we have an IP packet */
     struct ether_header *eth_header;
@@ -165,7 +194,7 @@ void my_packet_handler(u_char *args, const struct pcap_pkthdr *header, const u_c
     ip_header_length = ip_header_length * 4;
     printf("IP header length in bytes: %d\n", ip_header_length);
 
-    // Find source and dest ip addresses 
+    // Find source and dest ip addresses manualy
     const u_char * source_ip = ip_header + ip_header_length - 4*2; 
     const u_char * dest_ip = ip_header + ip_header_length - 4; 
     printf("Source ip: ");
@@ -249,6 +278,63 @@ main(int argc, char *argv[])
 	
 	return 0;
 }
+
+/* Lists */
+
+struct network_flow * new_net_flow(struct network_flow *head, struct packet *p)
+{
+    struct network_flow * flow = (struct network_flow *)malloc(sizeof(struct network_flow));
+
+    flow->source_ip = strdup(p->source_ip);
+    flow->dest_ip = strdup(p->dest_ip);
+    flow->src_port = p->src_port;
+    flow->dst_port = p->dst_port;
+    flow->protocol = p->protocol;
+    flow->next = NULL;
+
+    return flow;
+}
+
+struct network_flow * add_net_flow(struct network_flow *head, struct network_flow *node)
+{
+    if(head == NULL){
+        return node;
+    }
+
+    // Temp node for traversing
+    struct network_flow *cur = head;
+
+    // Move the temp node till the end of the list
+    while(cur->next != NULL){
+        cur = cur->next;
+    }
+
+    // Add the new node at the end
+    cur->next = node;
+
+    // Return the head of the list
+    return head;
+}
+
+int net_flow_exists(struct network_flow *head, struct network_flow *node)
+{
+    // Temp node for traversing
+    struct network_flow *cur = head;
+
+    // Move the temp node till the end of the list
+    while(cur != NULL){
+        if(strcmp(cur->source_ip, node->source_ip) == 0 && strcmp(cur->dest_ip, node->dest_ip) == 0 && cur->src_port == node->src_port && cur->dst_port == node->dst_port && cur->protocol == node->protocol){
+            return 1;
+        }
+        cur = cur->next;
+    }
+
+    return 0;
+}
+
+
+/* Utilities */
+
 
 /*
  * Prints the hex value of the input
