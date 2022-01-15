@@ -1,0 +1,229 @@
+\documentclass[11pt,a4paper]{report}
+
+\usepackage{ucs}
+\usepackage[utf8x]{inputenc}
+\usepackage[greek,english]{babel}
+\usepackage{eucal}
+% \usepackage{tabularray}
+\usepackage[table]{xcolor}
+\usepackage{tabularray}
+\usepackage{tabularx}
+
+
+\newcommand{\gr}{\selectlanguage{greek}} % switch to greek
+\newcommand{\en}{\selectlanguage{english}}  % switch to english
+\newcommand{\notes}[1]{ \comment{ #1 } }
+\newcommand{\latin}[1]{\en#1\gr}			% English text in greek text environment
+\newcommand{\code}[1]{\texttt{\latin{#1}}}	% In-line code snippet
+\newcommand{\unit}[1]{\text{\latin{ #1}}}	% For upright font in math mode
+
+% set papper view
+\usepackage{geometry}
+\geometry{
+	a4paper,
+	left=20mm,
+	right=20mm,
+	top=15mm,
+}
+
+% set hyper link set up
+\usepackage{hyperref}
+\hypersetup{
+    colorlinks,
+    citecolor=black,
+    filecolor=black,
+    linkcolor=black,
+    urlcolor=blue
+}
+
+
+\usepackage{csquotes} % \textquote{ } / \begin{displayquote} ... \end{displayquote}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{mathtools}
+\usepackage{pgf}
+\usepackage{tikz}
+\usepackage{listings}
+\usepackage{synttree}
+
+\usepackage{makecell}
+\usepackage{booktabs}
+
+\usetikzlibrary{positioning}
+\usetikzlibrary{arrows,automata}
+\usetikzlibrary{shapes}
+
+\DeclarePairedDelimiter\ceil{\lceil}{\rceil}
+\DeclarePairedDelimiter\floor{\lfloor}{\rfloor}
+
+
+\title{\textbf{Ασφάλεια Συστημάτων και Υπηρεσιών} \\ Αναφορά $7^{\eta \varsigma}$ Άσκησης }
+\author{ \vspace*{0.5cm} \\ Γιουμερτάκης Απόστολος, 2017030142 \\ }
+\date{} 
+
+% \begin{figure}[h!]
+%     \centering
+%     \includegraphics[width=0.6\linewidth]{graphs/initDog.png}
+%     % \caption{\latin{Source Image}}
+% \end{figure}
+% \vspace*{1cm}
+
+\begin{document}
+\gr
+\maketitle
+
+
+\section*{Άσκηση 1}
+
+Κατασκευή πίνακα πολιτικών του τείχους προστασίας
+% Για να μετρήσουμε την παραμόρφωση που υπέστει η \latin{convoluted} εικόνα έγινε η χρήση:
+% \begin{itemize}
+    
+%     \item[i)] \latin{Mean square error} που ορίζεται ώς
+%         $$MSE(I,\tilde{I}) = \frac{1}{MN}\sum\limits_i^N\sum\limits_j^M (I(i,j) - \tilde{I}(i,j))^2$$
+
+%     \item[ii)] \latin{Peak Signal-to-Noise Ratio} που ορίζεται ως
+%         $$PSNR(I,\tilde{I}) = 10 log_{10} \left( \frac{max_I^2}{MSE(I,\tilde{I})} \right)$$
+% \end{itemize}
+
+\en
+\begin{table}[h!]
+\begin{center}
+% \begin{tabularx}{1\textwidth} { 
+%   | >{\centering\arraybackslash}X 
+%   | >{\centering\arraybackslash}X 
+%   | >{\centering\arraybackslash}X 
+%   | >{\centering\arraybackslash}X 
+%   | >{\centering\arraybackslash}X 
+%   | >{\centering\arraybackslash}X 
+%   | >{\centering\arraybackslash}X 
+%   | >{\centering\arraybackslash}X 
+%   | >{\centering\arraybackslash}X 
+%   | }
+%  \begin{tblr}{|c|c|c|c|c|c|c|c|c|}
+ \begin{tblr}{| c | c | >{\centering}m{4em} | >{\centering}m{4em} | >{\centering}m{3.5em} | >{\centering}m{3em} | >{\centering}m{3em} | >{\centering}m{3em} | >{\centering}m{4.5em} | >{\centering}m{5.5em} |}
+ \hline
+ & Action & Source Address & Dest Address & Protocol & Source Port & Dest Port & Flag bit & Check connection & Description \\
+ \hline\hline
+ 1 & Allow & Internet & TUC & TCP & ANY & 80 & ANY & 0 & \makecell{HTTP in\\(server)} \\
+ \hline
+ 2 & Allow & Internet & TUC & TCP & ANY & 443 & ANY & 0 & \makecell{HTTPs in\\(server)}\\
+ \hline
+ 3 & Allow & TUC & Internet & TCP & 80 & ANY & ANY & 0 & \makecell{HTTP out\\(server)}\\
+ \hline
+ 4 & Allow & TUC & Internet & TCP & 443 & ANY & ANY & 0 & \makecell{HTTPs out\\(server)}\\
+ \hline
+ 5 & Allow & Internet & TUC & TCP & 80 & ANY & ANY & 0 & \makecell{HTTP in\\(client)} \\
+ \hline
+ 6 & Allow & Internet & TUC & TCP & 443 & ANY & ANY & 0 & \makecell{HTTPs in\\(client)}\\
+ \hline
+ 7 & Allow & TUC & Internet & TCP & ANY & 80 & ANY & 0 & \makecell{HTTP out\\(client)}\\
+ \hline
+ 8 & Allow & TUC & Internet & TCP & ANY & 443 & ANY & 0 & \makecell{HTTPs out\\(client)}\\
+ \hline
+ 9 & Allow & Internet & TUC & TCP & 22 & ANY & ACK & 1 & \makecell{SSH,\\SFTP in\\(client)}\\
+ \hline
+ 10 & Allow & TUC & Internet & TCP & ANY & 22 & ACK & 1 & \makecell{SSH,\\SFTP out\\(client)}\\
+ \hline
+%  6 & Allow & Internet & TUC & TCP & ANY & 21 & SYN & 420 & FTP\\
+%  \hline
+%  7 & Allow & Internet & TUC & TCP & ANY & 995 & SYN & 000 & \makecell{POP3\\(rx enc)}\\
+%  \hline
+%  8 & Allow & Internet & TUC & TCP & ANY & 993 & SYN & 000 & \makecell{IMAP\\(rx enc)}\\
+%  \hline
+ 11 & Allow & TUC & Internet & \makecell{UDP/\\TCP} & 53 & ANY & ACK & 1 & \makecell{DNS\\server}\\
+ \hline
+ 12 & Allow & Internet & TUC & \makecell{UDP/\\TCP} & ANY & 53 & ANY & 0 & \makecell{DNS\\server}\\
+ \hline
+ 13 & Allow & TUC & Internet & \makecell{UDP/\\TCP} & ANY & 53 & ANY & 0 & \makecell{DNS\\external}\\
+ \hline
+ 14 & Allow & Internet & TUC & \makecell{UDP/\\TCP} & 53 & ANY & ACK & 1 & \makecell{DNS\\external}\\
+ \hline
+ 15 & Reject & Internet & TUC & ICMP & ANY & ANY & ANY & 0 & ICMP in\\
+ \hline
+ 16 & Allow & TUC & Internet & ICMP & ANY & ANY & ANY & 0 & ICMP out\\
+ \hline
+ 17 & Deny & 0.0.0.0 & 0.0.0.0 & TCP & ANY & ANY & ANY & -- & NONE\\
+ \hline
+ \end{tblr}
+%  \end{tabularx}
+  \end{center}
+\end{table}
+\gr
+
+\newpage
+\noindent
+\latin{\textbf{Action}}:
+\begin{itemize}
+\itemsep 0em
+    \item \latin{Allow}: Επιτρέπει την πρόσβαση στα συγκεκριμένα \latin{ports}.
+    \item \latin{Allow}: Απότρέπει την πρόσβαση στα συγκεκριμένα \latin{ports}, χωρίς καμία απάντηση στον χρήστη (\latin{client}).
+    \item \latin{Reject}: Απότρέπει την πρόσβαση στα συγκεκριμένα \latin{ports}, στέλνοντας την απάντηση "\latin{Destination is unreachable}" στον χρήστη (\latin{client}).
+\end{itemize}
+
+\noindent
+\textbf{Κανόνας 1,2:}\\
+Επιτρέπει την αποστολή πακέτων από εξωτερικό υπολογιστή πρός το Πολυτεχνείο Κρήτης για πρωτόκολλα \latin{HTTP, HTTPs} για πρόσβαση σε ιστοσελίδες όπως το \latin{tuc.gr}, με όλα τα \latin{flags} ενεργοποιημένα. \\
+
+\noindent
+\textbf{Κανόνας 3,4:}\\
+Επιτρέπει την αποστολή πακέτων (απαντήσεων) από \latin{servers} του Πολυτεχνείου Κρήτης προς εξωτερικό υπολογιστή για πρωτόκολλα \latin{HTTP, HTTPs} για πρόσβαση σε ιστοσελίδες όπως το \latin{tuc.gr}, με όλα τα \latin{flags} ενεργοποιημένα. \\
+
+\noindent
+\textbf{Κανόνας 5,6:}\\
+Επιτρέπει την αποστολή πακέτων από υπολογιστές του Πολυτεχνείου Κρήτης προς εξωτερικούς \latin{servers} για πρωτόκολλα \latin{HTTP, HTTPs} για πρόσβαση σε ιστοσελίδες όπως το \latin{google.com}, με όλα τα \latin{flags} ενεργοποιημένα. \\
+
+\noindent
+\textbf{Κανόνας 7,8:}\\
+Επιτρέπει την αποστολή πακέτων (απαντήσεων) από εξωτερικούς \latin{servers} προς υπολογιστές του Πολυτεχνείου Κρήτης για πρωτόκολλα \latin{HTTP, HTTPs} για πρόσβαση σε ιστοσελίδες όπως το \latin{google.com}, με όλα τα \latin{flags} ενεργοποιημένα. \\
+
+\noindent
+\textbf{Κανόνας 9:}\\
+Επιτρέπει την αποστολή πακέτων (απαντήσεων) από εξωτερικούς \latin{servers} προς υπολογιστές του Πολυτεχνείου Κρήτης για πρόσβαση με \latin{secure shell} (πρωτόκολλα \latin{SSH, SFTP} και οποιαδήποτε υπηρεσία υλοποιείται πάνω από \latin{ssh}). \\
+
+\noindent
+\textbf{Κανόνας 10:}\\
+Επιτρέπει την αποστολή πακέτων από υπολογιστές του Πολυτεχνείου Κρήτης προς εξωτερικούς \latin{servers} για πρόσβαση με \latin{secure shell} (πρωτόκολλα \latin{SSH, SFTP} και οποιαδήποτε υπηρεσία υλοποιείται πάνω από \latin{ssh}). \\
+
+\noindent
+\textbf{Κανόνας 11:}\\
+Επιτρέπει την αποστολή πακέτων (απαντήσεων) από τον \latin{server} του Πολυτεχνείου Κρήτης προς εξωτερικούς υπολογιστές για αναζήτηση πληροφοριών \latin{DNS}, με τα πρωτόκολλα \latin{UDP, TCP} αντίστοιχα (τo πρωτόκολλo \latin{UDP} πιο διαδεδομένο από το \latin{TCP} για εφαρμογές \latin{DNS}). Το \latin{flag: ACK} έχει νόημα μόνο όταν το πρωτόκολλο είναι \latin{TCP}.\\
+
+\noindent
+\textbf{Κανόνας 12:}\\
+Επιτρέπει την λήψη πακέτων (\latin{queries}) από εξωτερικούς υπολογιστές προς τον \latin{server} του Πολυτεχνείου Κρήτης για αναζήτηση πληροφοριών \latin{DNS}, με τα πρωτόκολλα \latin{UDP, TCP} αντίστοιχα (τo πρωτόκολλo \latin{UDP} πιο διαδεδομένο από το \latin{TCP} για εφαρμογές \latin{DNS}).\\
+
+\noindent
+\textbf{Κανόνας 13:}\\
+Επιτρέπει την αποστολή πακέτων (\latin{queries}) από υπολογιστές του Πολυτεχνείου Κρήτης προς εξωτερικούς \latin{servers} για αναζήτηση πληροφοριών \latin{DNS}, με τα πρωτόκολλα \latin{UDP, TCP} αντίστοιχα.\\
+
+\noindent
+\textbf{Κανόνας 14:}\\
+Επιτρέπει την λήψη πακέτων (απαντήσεων) από εξωτερικούς \latin{servers} προς υπολογιστές του Πολυτεχνείου Κρήτης για αναζήτηση πληροφοριών \latin{DNS}, με τα πρωτόκολλα \latin{UDP, TCP} αντίστοιχα. Το \latin{flag: ACK} έχει νόημα μόνο όταν το πρωτόκολλο είναι \latin{TCP}.\\
+
+\noindent
+\textbf{Κανόνας 15:}\\
+\textbf{Απότρέπει} την λήψη πακέτων από εξωτερικούς υπολογιστές προς \latin{webservers} του Πολυτεχνείου Κρήτης για έλεγχο και διαχείρηση των συστημάτων, με το πρωτόκολλο \latin{ICMP}. \\
+
+\noindent
+\textbf{Κανόνας 16:}\\
+Επιτρέπει την αποστολή πακέτων από υπολογιστές του Πολυτεχνείου Κρήτης προς εξωτερικούς \latin{servers} για έλεγχο και διαχείρηση των συστημάτων, με το πρωτόκολλο \latin{ICMP}. \\
+
+\noindent
+\textbf{Κανόνας 16:}\\
+Μπλοκάρεται όλη η κίνηση για οποιαδήποτε άλλη υπηρεσία "τρέχει" σε \latin{ports}.
+
+\section*{Άσκηση 2}
+Ερώτηση:\\
+\textit{Σε περίπτωση που υλοποιούσατε το συγκεκριμένο τείχος προστασίας σε ένα \latin{Linux PC},
+ποιος θα ήταν ο ελάχιστος αριθμός καρτών \latin{Ethernet} που θα έπρεπε να είχε το \latin{PC}.
+Δικαιολογήστε σε μία γραμμή την απάντησή σας.}\\
+\newline
+Απάντηση:\\
+Χρειάζονται τουλάχιστον δύο(2) κάρτες για την λειτουργία του τείχους προστασίας, μια με στατική τοπική διεύθυνση \latin{IP (147.27.x.x)} και μια με εξωτερική διεύθυνση \latin{IP}, ώστε να μπορεί να δει τις διευθύνσεις κάθε εσωτερικού αλλά και εξωτερικού υπολογιστή.\\
+\newline
+\newline
+\newline
+Tα παραπάνω επιβεβαιώθηκαν στο μέγιστο δυνατό χρησιμοποιώντας το πρόγραμμα καταγραφής πακέτων, \latin{Wireshark}.
+
+\end{document}
